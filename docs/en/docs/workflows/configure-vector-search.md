@@ -44,3 +44,19 @@ powercontext capabilities
 The result reports the enabled search modes. Without an embedding profile, SQLite full-text search remains available.
 
 For timeouts, batch size, storage settings, and exact defaults, see [Configuration](../operate/configuration.md).
+
+## Native seekdb hybrid candidates
+
+With the seekdb backend and an embedding profile configured, `Memory.search(mode="hybrid")` retrieves its two candidate
+rankings through one SQL statement on the existing connection. Each branch applies Scope, requested Memory artifacts,
+optional tag predicates, and its own candidate limit in the database. The branches use the native FULLTEXT and HNSW
+indexes; shared admission and reciprocal-rank fusion continue to run in the Memory service.
+
+The one-statement guarantee covers candidate retrieval. Current-head and embedding-completeness validation and exact
+body reads remain separate operations. Incremental projections need not be rewritten to stamp a new head revision:
+returned citations use the requested, validated current Memory head and the selected entry version. Revision,
+deactivation, reactivation, and projection recovery continue through the existing transactional write path.
+
+No new configuration or schema migration is required. FTS-only and vector-only searches retain their existing paths;
+OceanBase and SQLite keep their existing backend behavior. This query consolidation does not by itself establish
+end-to-end speed or semantic retrieval quality; those require measurement with the chosen corpus and embeddings.
