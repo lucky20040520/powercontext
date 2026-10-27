@@ -9,6 +9,34 @@ description: 选择 Memory、Experience、Profile 和 Topic Memory 的输出类�
 已批准的 Experience、正式 Profile 快照和 Topic Memory，调整章节顺序、限制条数，并展示召回位置和置信度状态。请使用已存在且具有读取权限的
 Scope；读取其引用的其他 Scope 也需要对应权限。
 
+## 按查询选择原文证据
+
+在 `POST /v1/context/prepare` 或 Python 的 `PrepareContextRequest` 中设置 `evidence_selection=true`：
+
+```json
+{
+  "scope_id": "project:demo",
+  "query": "cobalt sensor calibration temperature",
+  "max_bytes": 1400,
+  "evidence_selection": true
+}
+```
+
+此模式从已召回的候选 Memory 正文中选择与查询相关的原文，优先于 `assembly` 和 `include_code`，只处理 Memory。
+Scope 和 Context Reference 的读取权限仍然生效。片段选择在本地执行，不调用模型或网络；原有 Memory 检索如果配置了
+向量模型或重排服务，仍按该配置召回候选，开启片段选择不会替换检索配置。
+
+输出保留历史数据信任提示和 `BEGIN_POWERCONTEXT_PREPARED_CONTEXT_V1` 边界。每个 JSON 项包含
+`citation`（`scope_id`、`memory_ref`、`entry_id`、`entry_version_id`）、`content`、`start` 和 `end`。
+`content` 严格等于引用历史版本的 `entry.text[start:end]`，坐标采用 Python 字符半开区间。同一 entry 可以贡献多个
+不相邻片段，相邻片段合并时保留原始空白。完整 UTF-8 输出包含 JSON 转义、引用、边界和信任提示，均计入 `max_bytes`。
+没有相关片段能够装入预算时返回 `status="empty"`、`content=null`、`content_bytes=0`。
+
+调用方也可以将已召回候选传给 `PreparedContextBuilder.build_scopes_result`，通过结果的 `fragments` 元组取得
+`PreparedEvidenceFragment` 对象，并通过逐项对应的 `origins` 取得 Scope 引用。句子排序结合查询覆盖、当前候选集合的
+文档词频和语篇提示；完整句子装不下时可以返回围绕查询词的原文窗口。该算法基于词面，不验证事实，也不保证语义证据覆盖。
+`evidence_selection` 默认为 `false`，普通 prepare 和文本组装保持原有行为。MCP Memory 工具继续使用现有接口。
+
 ## 在 Python 中增量传输上下文
 
 `runtime.context.for_scope(scope_id).prepare_incremental(request, base_pack=None)` 在首次请求时返回完整

@@ -34,6 +34,7 @@ from powercontext.builtin.runtime.prepared_code import (
     PreparedCodeCandidate,
     assemble_code,
 )
+from powercontext.builtin.runtime.prepared_evidence import MemoryEntryAddress, PreparedEvidenceFragment, select_evidence
 from powercontext.builtin.runtime.prepared_text import (
     TRUST_POLICY,
     ContextTextItem,
@@ -106,15 +107,7 @@ class PreparedContextBuild:
     origins: tuple[PreparedContextOrigin, ...]
     omissions: PreparedContextOmissions = PreparedContextOmissions()
     code_origins: tuple[CodeEvidenceRef, ...] = ()
-
-
-@dataclass(frozen=True)
-class MemoryEntryAddress:
-    """Identify one exact Memory entry version across Scope boundaries."""
-
-    memory: ArtifactAddress
-    entry_id: str
-    entry_version_id: str
+    fragments: tuple[PreparedEvidenceFragment, ...] = ()
 
 
 PreparedContextOrigin = MemoryCitation | ArtifactRef | MemoryEntryAddress | ArtifactAddress
@@ -146,7 +139,7 @@ class PreparedProfileCandidate:
 
 
 class PreparedContextBuilder:
-    """Select and render final context without I/O, persistence, or reranking."""
+    """Select and render final context without I/O, persistence, or model calls."""
 
     memory_candidate_limit = 16
     topic_memory_candidate_limit = 8
@@ -211,6 +204,25 @@ class PreparedContextBuilder:
         profile_candidates: Sequence[PreparedProfileCandidate] = (),
         code_candidates: Sequence[PreparedCodeCandidate] = (),
     ) -> PreparedContextBuild:
+        if request.evidence_selection:
+            if sum(len(group.hits) for group in memory_candidates) > self.memory_candidate_limit:
+                raise PreparedContextInvariantError("memory-candidate-limit")
+            selection = select_evidence(memory_candidates, request.query, request.max_bytes, self.entry_limit)
+            content, fragments = selection.content, selection.fragments
+            return PreparedContextBuild(
+                context=(
+                    self.empty()
+                    if content is None
+                    else PreparedContext(status="ready", content=content, content_bytes=len(content.encode("utf-8")))
+                ),
+                origins=tuple(fragment.address for fragment in fragments),
+                fragments=fragments,
+                omissions=PreparedContextOmissions(
+                    truncated_items=selection.truncated_items,
+                    dropped_items=selection.dropped_items,
+                    dropped_no_fitting_truncation=selection.dropped_items,
+                ),
+            )
         if request.include_code:
 
             def historical(history_request: PrepareContextRequest, entries: int) -> PreparedContextBuild:
@@ -276,6 +288,18 @@ class PreparedContextBuilder:
         the same inputs as :meth:`build_scopes_result` are guaranteed to yield the same
         counters because both go through :meth:`_select_entries`.
         """
+
+        if request.evidence_selection:
+            build = self.build_scopes_result(
+                request=request, current_scope_id=current_scope_id, memory_candidates=memory_candidates
+            )
+            return RecallBudgetView(
+                max_bytes=request.max_bytes,
+                delivered_items=len(build.fragments),
+                truncated_items=build.omissions.truncated_items,
+                dropped_items=build.omissions.dropped_items,
+                unused_bytes=max(0, request.max_bytes - build.context.content_bytes),
+            )
 
         content, origins, omissions = self._select_entries(
             request=request,

@@ -480,6 +480,7 @@ def test_prepared_context_is_a_generic_typed_operation_outside_the_mcp_memory_to
         "max_bytes",
         "assembly",
         "include_code",
+        "evidence_selection",
     }
     assert set(schemas["PreparedContext"]["properties"]) == {"schema", "status", "content", "content_bytes"}
     assert not {"memory", "mode", "selection"} & set(schemas["PreparedContext"]["properties"])

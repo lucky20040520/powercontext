@@ -10,6 +10,37 @@ approved Experience, committed Profile snapshots, and Topic Memory, arrange thei
 rank and confidence status.
 Use an existing Scope that you can read; reading referenced Scopes also requires permission.
 
+## Select literal evidence by query
+
+Set `evidence_selection` to `true` on `POST /v1/context/prepare` or Python's `PrepareContextRequest`:
+
+```json
+{
+  "scope_id": "project:demo",
+  "query": "cobalt sensor calibration temperature",
+  "max_bytes": 1400,
+  "evidence_selection": true
+}
+```
+
+This mode selects original Memory passages from the candidates recalled for the query. It overrides `assembly` and
+`include_code`; only Memory participates. Scope and Context Reference read permissions still apply. The selector runs
+locally without a model or network requests. Existing configured Memory recall may still use its embedding or reranking
+backend; enabling selection does not replace that retrieval configuration.
+
+The returned context retains the historical trust policy and `BEGIN_POWERCONTEXT_PREPARED_CONTEXT_V1` envelope. Each
+JSON item has `citation` (`scope_id`, `memory_ref`, `entry_id`, `entry_version_id`), `content`, `start`, and `end`.
+`content` is exactly `entry.text[start:end]`, with half-open Python character offsets into the cited historical version.
+A single entry may contribute multiple disjoint passages. Adjacent passages are merged with their original whitespace.
+The complete UTF-8 output, including JSON escaping, citations, markers, and policy, fits `max_bytes`. If nothing relevant
+fits, the response has `status="empty"`, `content=null`, and `content_bytes=0`.
+
+For callers supplying already recalled candidates, `PreparedContextBuilder.build_scopes_result` also returns a
+`fragments` tuple of `PreparedEvidenceFragment` objects and matching scoped `origins`. Sentence ranking uses query
+coverage, candidate-local document frequency, and discourse cues; sentences that cannot fit can contribute a query-centered
+literal window. Selection is lexical and does not verify claims or promise semantic coverage. `evidence_selection` defaults
+to `false`, preserving ordinary preparation and text assembly. MCP memory tools retain their existing interface.
+
 ## Transfer prepared context incrementally from Python
 
 `runtime.context.for_scope(scope_id).prepare_incremental(request, base_pack=None)` returns a complete `ContextPack`

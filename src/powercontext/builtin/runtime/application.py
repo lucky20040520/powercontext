@@ -855,12 +855,18 @@ class ScopedContextApplication:
         authorize_scopes: Callable[[tuple[str, ...]], Awaitable[None]] | None = None,
     ) -> PreparedContext:
         if (
-            request.assembly is not None
+            not request.evidence_selection
+            and request.assembly is not None
             and sum(section.limit for section in request.assembly.sections) > self._runtime.context_assembly_max_entries
         ):
             raise InvalidRuntimeRequestError("context-assembly-entry-limit")
         async with self._runtime._scope_operation(self.scope_id) as scope:
-            if request.assembly is not None and not request.assembly.sections and not request.include_code:
+            if (
+                not request.evidence_selection
+                and request.assembly is not None
+                and not request.assembly.sections
+                and not request.include_code
+            ):
                 return PreparedContextBuilder().empty()
             if authorize_scopes is not None:
                 await authorize_scopes((self.scope_id, *scope.context_references))
@@ -924,7 +930,7 @@ class ScopedContextApplication:
         """
 
         builder = PreparedContextBuilder()
-        if request.include_code:
+        if request.include_code and not request.evidence_selection:
             builder.entry_limit = self._runtime.context_assembly_max_entries
         scope_ids = [self.scope_id, *scope.context_references]
         families: set[str] = (
@@ -932,6 +938,8 @@ class ScopedContextApplication:
             if request.assembly is not None
             else {MEMORY_FAMILY, EXPERIENCE_FAMILY, TOPIC_MEMORY_FAMILY}
         )
+        if request.evidence_selection:
+            families = {MEMORY_FAMILY}
         # Caller-owned cache of the query vectors round 0 already paid for, keyed by scope.
         # Expansion rounds read it so a repeat search does not re-embed; round 0 fills it.
         reuse: dict[str, MemoryQueryEmbedding] = {}
@@ -980,7 +988,7 @@ class ScopedContextApplication:
                 topic_reuse=topic_reuse,
                 round_zero=round_zero,
             )
-        code = await self._code_candidates(request) if request.include_code else ()
+        code = await self._code_candidates(request) if request.include_code and not request.evidence_selection else ()
         with self._runtime._stage(
             "context.build",
             attributes={

@@ -8917,6 +8917,10 @@ components:
           type: boolean
           default: false
           description: Opt into current-Scope native code evidence. No index is built during preparation.
+        evidence_selection:
+          type: boolean
+          default: false
+          description: Select literal Memory evidence by query within the complete UTF-8 output budget. Overrides assembly and include_code; other families are omitted.
         assembly:
           $ref: "#/components/schemas/ContextAssembly"
     ContextAssemblySection:
