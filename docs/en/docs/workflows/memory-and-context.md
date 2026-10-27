@@ -30,6 +30,56 @@ remaining distinct terms, with a minimum of two matches; one- or two-term querie
 prepared context share this rule, including when the optional recall gate relaxes the threshold. Stored text and
 vector queries are unchanged, and matching words alone do not establish semantic relevance.
 
+## Withdraw and restore registered evidence
+
+The Python built-in Runtime exposes `runtime.lifecycle.for_scope(scope_id)` for an explicit, immutable dependency DAG.
+Bind existing captured `SourceRef` values, readable `MemoryCitation` values, and Topic Memory `ArtifactRef` values:
+
+```python
+from powercontext.builtin.runtime.source_lifecycle import SourceLifecycleEvent
+
+
+async def withdraw_evidence(runtime, scope_id, source_ref, citation, topic_ref):
+    service = runtime.lifecycle.for_scope(scope_id)
+    await service.register_source("source-a", source_ref, revision=3)
+    await service.register_memory("memory-a", citation, parents=("source-a",), policy="all")
+    await service.register_topic("topic-a", topic_ref, parents=("memory-a",), policy="any")
+    return await service.apply(
+        SourceLifecycleEvent(node_id="source-a", revision=3, sequence=1, available=False, reason="Source withdrawn")
+    )
+```
+
+Node IDs are unique within a Scope. An identical registration is idempotent; a different binding conflicts.
+Each native Source, logical Memory entry, or Topic identity has one node. Register parents first and supply at least
+one distinct parent for a derived node. `all` requires every parent; `any` means any parent independently supports
+the entire body. Split independent claims into separate nodes when that assumption does not hold. Registration
+immediately applies current parent availability, including when a Source was already withdrawn. Keep one writer per
+Scope and do not externally revise registered Memory body versions while the binding is in use.
+
+Events require nonblank string IDs/reasons, strict positive integer revisions/sequences, a strict boolean availability,
+and no extra fields. Only Source nodes accept events, and their registered lifecycle revision must match exactly.
+Sequences increase per Source. Replaying the most recent identical event is idempotent; older or conflicting events
+raise `SourceLifecycleError`. Restore a Source by sending `available=True` with a higher sequence.
+
+Propagation persists the graph, event, and native Memory state transitions in one transaction. Failed native writes
+roll back the event and state, so the same event can be retried after fixing the failure or reopening the database.
+Successful replay creates no new Memory revision. Memory state changes preserve entry body versions and remove inactive
+entries from ordinary search and PreparedContext. Unsupported Topics are filtered from browse, FTS, vector retrieval,
+and Context before candidate limits; their stored projections and exact revisions remain available for audit.
+
+`await service.resolve(node_id, purpose="generation")` returns the original reference only while the node is available.
+`purpose="audit"` returns the original reference even after withdrawal. Unknown nodes/purposes raise
+`SourceLifecycleError`. `apply()` returns every currently available node ID in sorted order, including Sources.
+Bindings and status survive reopening the same database and are isolated by Scope.
+
+Graph updates read one Scope's graph and evaluate its nodes and edges in linear time; native Memory publication
+retains its existing manifest and index costs. Resolution uses a keyed lookup. Topic eligibility uses an indexed
+Scope/Topic status lookup without rewriting historical content. SQLite behavior is covered by native persistence
+tests; live OceanBase/seekdb execution requires those external backend tests.
+
+Graph management is a Python Runtime API. Existing HTTP/MCP search and Context surfaces observe the stored states;
+there are no new HTTP/MCP graph-management endpoints.
+
 ## Automatic context and extraction
 
 Recall hooks ask the Server for bounded PreparedContext. An `empty` result is valid when no relevant information is
