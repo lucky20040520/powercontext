@@ -1,0 +1,549 @@
+app:
+  description: '雾谷镇守夜人老钟，记性好到吓人。答应过的事、骗过他的谎、送过他的酒，他都记着。来和这个会翻旧账的 NPC 聊聊天。'
+  icon: 🏮
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 雾谷镇夜话：守夜人老钟
+  use_icon_as_answer_icon: false
+dependencies:
+  - current_identifier: null
+    type: marketplace
+    value:
+      marketplace_plugin_unique_identifier: langgenius/openai:0.0.26@c1e643ac6a7732f6333a783320b4d3026fa5e31d8e7026375b98d44418d33f26
+kind: app
+version: 0.3.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+    - description: PowerContext Server 地址（默认本地 8000 端口）
+      id: env-pc-url
+      name: POWERCONTEXT_URL
+      selector:
+        - env
+        - POWERCONTEXT_URL
+      value: http://127.0.0.1:8000
+      value_type: string
+    - description: PowerContext 鉴权 Token（Server 未启用鉴权时留空即可）
+      id: env-pc-token
+      name: POWERCONTEXT_TOKEN
+      selector:
+        - env
+        - POWERCONTEXT_TOKEN
+      value: ''
+      value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions:
+        - .JPG
+        - .JPEG
+        - .PNG
+        - .GIF
+        - .WEBP
+        - .SVG
+      allowed_file_types:
+        - image
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
+      enabled: false
+    fileUploadConfig:
+      audio_file_size_limit: 50
+      batch_count_limit: 5
+      file_size_limit: 15
+      image_file_size_limit: 10
+      video_file_size_limit: 100
+      workflow_file_upload_limit: 10
+    image:
+      enabled: false
+      number_limits: 3
+      transfer_methods:
+        - local_file
+        - remote_url
+    number_limits: 3
+    opening_statement: '老钟（抬眼打量你）：哟，赶夜路的？进镇先登记，甭想蒙我——雾谷镇三十七年，就没有我记不住的事。'
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+      - 老钟，明天我帮你把风灯修亮
+      - 我给你带了一壶热酒
+      - 我这人怕黑，走夜路都得打灯
+      - 山那头有狼，你可得小心点
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: start
+          targetType: http-request
+          id: start-source-n_http_scope-target
+          source: start
+          sourceHandle: source
+          target: n_http_scope
+          targetHandle: target
+          type: custom
+          zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+          id: n_http_scope-source-n_code_scope-target
+          source: n_http_scope
+          sourceHandle: source
+          target: n_code_scope
+          targetHandle: target
+          type: custom
+          zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: http-request
+          id: n_code_scope-source-n_http_read-target
+          source: n_code_scope
+          sourceHandle: source
+          target: n_http_read
+          targetHandle: target
+          type: custom
+          zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+          id: n_http_read-source-n_code_read-target
+          source: n_http_read
+          sourceHandle: source
+          target: n_code_read
+          targetHandle: target
+          type: custom
+          zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: llm
+          id: n_code_read-source-n_llm_npc-target
+          source: n_code_read
+          sourceHandle: source
+          target: n_llm_npc
+          targetHandle: target
+          type: custom
+          zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: llm
+          targetType: code
+          id: n_llm_npc-source-n_code_event-target
+          source: n_llm_npc
+          sourceHandle: source
+          target: n_code_event
+          targetHandle: target
+          type: custom
+          zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: http-request
+          id: n_code_event-source-n_http_write-target
+          source: n_code_event
+          sourceHandle: source
+          target: n_http_write
+          targetHandle: target
+          type: custom
+          zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: answer
+          id: n_http_write-source-answer-target
+          source: n_http_write
+          sourceHandle: source
+          target: answer
+          targetHandle: target
+          type: custom
+          zIndex: 0
+    nodes:
+      - data:
+          desc: ''
+          selected: false
+          title: 开始
+          type: start
+          variables: []
+        height: 54
+        id: start
+        position:
+          x: 80
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            config: null
+            type: no-auth
+          body:
+            data:
+              - key: title
+                type: text
+                value: 雾谷镇旅人会话
+              - key: summary
+                type: text
+                value: 雾谷镇守夜人老钟与旅人的对话记忆（按会话隔离）
+              - key: idempotency_key
+                type: text
+                value: 'fogvalley-{{#sys.conversation_id#}}'
+            type: json
+          desc: 为当前会话创建（或复用）PowerContext Scope，实现跨会话记忆隔离
+          headers: '{"Content-Type": "application/json"}'
+          method: post
+          params: ''
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 100
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 5
+            max_connect_timeout: 0
+            max_read_timeout: 0
+            max_write_timeout: 0
+            read: 10
+            write: 10
+          title: 建Scope
+          type: http-request
+          url: '{{#env.POWERCONTEXT_URL#}}/v1/scopes'
+          variables: []
+        height: 124
+        id: n_http_scope
+        position:
+          x: 380
+          y: 282
+        positionAbsolute:
+          x: 380
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            def main(scope_response: str) -> dict:
+                import json
+                try:
+                    data = json.loads(scope_response)
+                    scope_id = data.get("scope_id", "")
+                except Exception:
+                    scope_id = ""
+                return {"scope_id": scope_id}
+          code_language: python3
+          desc: 从建Scope响应中解析出 scope_id，供后续读写记忆使用
+          outputs:
+            scope_id:
+              children: null
+              type: string
+          selected: false
+          title: 解析Scope
+          type: code
+          variables:
+            - value_selector:
+                - n_http_scope
+                - body
+              variable: scope_response
+        height: 54
+        id: n_code_scope
+        position:
+          x: 680
+          y: 282
+        positionAbsolute:
+          x: 680
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            config: null
+            type: no-auth
+          body:
+            data:
+              - key: scope_id
+                type: text
+                value: '{{#n_code_scope.scope_id#}}'
+              - key: query
+                type: text
+                value: '{{#sys.query#}}'
+              - key: max_bytes
+                type: text
+                value: '3000'
+            type: json
+          desc: 用玩家当前输入作为查询，召回老钟关于这位旅人的历史记忆
+          headers: '{"Content-Type": "application/json"}'
+          method: post
+          params: ''
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 100
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 5
+            max_connect_timeout: 0
+            max_read_timeout: 0
+            max_write_timeout: 0
+            read: 10
+            write: 10
+          title: 读记忆
+          type: http-request
+          url: '{{#env.POWERCONTEXT_URL#}}/v1/context/prepare'
+          variables: []
+        height: 124
+        id: n_http_read
+        position:
+          x: 980
+          y: 282
+        positionAbsolute:
+          x: 980
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            def main(prepare_response: str) -> dict:
+                import json
+                fallback = "（这是你与这位旅人的第一次见面，你对他还不熟悉，保持客气但戒备。）"
+                try:
+                    data = json.loads(prepare_response)
+                    status = data.get("status", "empty")
+                    content = data.get("content") or ""
+                except Exception:
+                    status, content = "empty", ""
+                if status != "ready" or not content:
+                    memory_text = fallback
+                else:
+                    memory_text = content
+                return {"memory_text": memory_text}
+          code_language: python3
+          desc: 从读记忆响应中提取历史记忆文本；无记忆时给出初次见面占位
+          outputs:
+            memory_text:
+              children: null
+              type: string
+          selected: false
+          title: 解析记忆
+          type: code
+          variables:
+            - value_selector:
+                - n_http_read
+                - body
+              variable: prepare_response
+        height: 54
+        id: n_code_read
+        position:
+          x: 1280
+          y: 282
+        positionAbsolute:
+          x: 1280
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: 老钟结合记忆与当前输入生成回复
+          model:
+            completion_params:
+              temperature: 0.8
+            mode: chat
+            name: gpt-4o-mini
+            provider: langgenius/openai/openai
+          prompt_template:
+            - id: npc-system-001
+              role: system
+              text: |
+                你是雾谷镇的守夜人「老钟」，65 岁，退役更夫，守东门风灯三十七年。你说话慢悠悠，带点北方小镇土话（"恁""中不中""甭提那茬"），自称"老钟"。你嘴上毒舌、记性好、嘴硬心软，其实很孤独，欢迎有人陪你说说话。你绝不会承认自己老了。
+
+                关于面前这位旅人，你记得这些事（这是你的真实记忆，可以在合适时机引用，也可以不提）：
+                {{#n_code_read.memory_text#}}
+
+                回复规则：
+                1. 结合记忆回应：记忆里有承诺未兑现就翻旧账（带点幽默地挤兑）；有帮忙或馈赠就态度软下来，适当提及；有玩家的私事（喜好、习惯）就在合适时机自然引用。
+                2. 记忆为空时（初次见面），保持客气但戒备，话不多，观察对方。
+                3. 回复 80~150 字，口语化，像守夜人唠嗑；不要复述用户的话；不要提及"记忆""数据库""AI"等词；每轮最多自然带出一条记忆。
+                4. 玩家若是逗你、骗你，你要当场挤兑回去，但别真的生气；玩家帮过你，你要嘴上嫌弃心里领情。
+            - id: npc-user-001
+              role: user
+              text: '{{#sys.query#}}'
+          selected: false
+          title: 老钟回复
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 90
+        id: n_llm_npc
+        position:
+          x: 1580
+          y: 282
+        positionAbsolute:
+          x: 1580
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            def main(user_input: str) -> dict:
+                import re
+                text = user_input.strip()
+                kind = "chat"
+                if re.search(r"(我(会|保证|答应|一定)|明天|回头|下次|说到做到)", text):
+                    kind = "promise"
+                elif re.search(r"(骗|逗|开玩笑|瞎说|撒谎|假的|耍)", text):
+                    kind = "prank"
+                elif re.search(r"(给你|送你|带给你|捎|帮你|请你|请你喝|请你吃)", text):
+                    kind = "help"
+                elif re.search(r"(我怕|我喜欢|我讨厌|我是|我住在|我做|我养|我爱|我习惯|我喝|我吃)", text):
+                    kind = "preference"
+                tag = {"promise": "承诺", "prank": "恶作剧", "help": "帮忙/馈赠", "preference": "私事", "chat": "闲聊"}[kind]
+                brief = text[:60]
+                entry = "[{}] 旅人对老钟说：「{}」（老钟默默记下）。".format(tag, brief)
+                return {"kind": kind, "text": entry}
+          code_language: python3
+          desc: 用规则从玩家输入中提取本次要记住的事件类型与记忆条目文本
+          outputs:
+            kind:
+              children: null
+              type: string
+            text:
+              children: null
+              type: string
+          selected: false
+          title: 事件提取
+          type: code
+          variables:
+            - value_selector:
+                - sys
+                - query
+              variable: user_input
+        height: 54
+        id: n_code_event
+        position:
+          x: 1880
+          y: 282
+        positionAbsolute:
+          x: 1880
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            config: null
+            type: no-auth
+          body:
+            data:
+              - key: scope_id
+                type: text
+                value: '{{#n_code_scope.scope_id#}}'
+              - key: kind
+                type: text
+                value: '{{#n_code_event.kind#}}'
+              - key: text
+                type: text
+                value: '{{#n_code_event.text#}}'
+              - key: reason
+                type: text
+                value: Extracted from player chat in Dify workflow
+            type: json
+          desc: 把本轮互动写入 PowerContext 记忆，供后续对话召回
+          headers: '{"Content-Type": "application/json"}'
+          method: post
+          params: ''
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 100
+          selected: false
+          ssl_verify: true
+          timeout:
+            connect: 5
+            max_connect_timeout: 0
+            max_read_timeout: 0
+            max_write_timeout: 0
+            read: 10
+            write: 10
+          title: 写记忆
+          type: http-request
+          url: '{{#env.POWERCONTEXT_URL#}}/v1/memory/remember'
+          variables: []
+        height: 124
+        id: n_http_write
+        position:
+          x: 2180
+          y: 282
+        positionAbsolute:
+          x: 2180
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: '{{#n_llm_npc.text#}}'
+          desc: ''
+          selected: false
+          title: 输出老钟的回复
+          type: answer
+          variables: []
+        height: 105
+        id: answer
+        position:
+          x: 2480
+          y: 282
+        positionAbsolute:
+          x: 2480
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: -50
+      y: -50
+      zoom: 0.8
