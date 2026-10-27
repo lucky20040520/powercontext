@@ -44,14 +44,16 @@ Source → 后台处理游标 → flush 请求 → 新建或更新不可变 Topi
 可以在配置向导中选择完整记忆，也可以直接配置 Server。Topic Memory 需要：
 
 - 受支持的 Generation 模型和有效的 Provider 凭据；
-- 将 `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SCHEDULE_SECONDS` 设为正数，以接纳新的自动处理任务；
+- 将 `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SCHEDULE_SECONDS` 设为正数，或将
+  `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SOURCE_COUNT_THRESHOLD` 设为正整数，以接纳新的自动处理任务；
 - Scope 中存在可归纳的 Source 证据。
 
 Topic Memory 本身不强制要求 Embedding。需要向量或混合检索时，再配置兼容的 Embedding 模型和维度。Server 会在每次
 搜索响应中返回实际使用的检索模式；调用方不能任意指定检索控制参数。
 
-调度周期是接纳间隔，不是完成时限。Topic 生成还受到 Provider 请求超时和 Worker 总超时控制。调度未设置时，不再接纳新的
-自动任务，但已经接纳的任务不会因此丢失。使用 SQLite 部署时，配置了 Generation 模型的 Topic Worker 要求持久化的
+调度周期是接纳间隔，不是完成时限。Topic 生成还受到 Provider 请求超时和 Worker 总超时控制。调度与数量门槛均未设置时，
+不再接纳新的自动任务，但已经接纳的任务不会因此丢失。计数及分窗规则见[按新增 Source 数量启动处理](sources.md#按新增-source-数量启动处理)。
+使用 SQLite 部署时，配置了 Generation 模型的 Topic Worker 要求持久化的
 文件型数据库，不能使用内存 SQLite。完整设置和部署约束见[配置模型与完整记忆](../get-started/configure-models.md)及[配置选项](../operate/configuration.md)。
 
 ## 验收一个真实主题

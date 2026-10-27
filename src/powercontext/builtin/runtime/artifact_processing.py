@@ -117,6 +117,7 @@ class ArtifactProcessingBinding:
     # Only automatic admission is filtered; already accepted requests retain
     # their own Worker authorization and domain completion semantics.
     automatic_scope_filter: Callable[[AsyncConnection, tuple[str, ...]], Awaitable[frozenset[str]]] | None = None
+    automatic_count_filter: Callable[[AsyncConnection, tuple[str, ...]], Awaitable[frozenset[str]]] | None = None
 
     def __post_init__(self) -> None:
         if not self.binding_name or self.binding_name != self.binding_name.strip():
@@ -401,6 +402,9 @@ class _FamilyState:
     discovery_pending: bool = True
     next_schedule_at: float | None = None
     next_discovery_at: float = 0.0
+    count_after: int = 0
+    count_upper_sequence: int | None = None
+    next_count_at: float = 0.0
     automatic_next: bool = False
     overflow_not_before: float = 0.0
     degraded: bool = False
@@ -699,6 +703,7 @@ class ArtifactProcessingSupervisor:
             state.next_discovery_at = asyncio.get_running_loop().time() + _DISCOVERY_PAGE_DELAY_SECONDS
 
     async def _discover_automatic(self, state: _FamilyState) -> None:  # noqa: C901 - bounded admission state
+        await self._discover_count(state)
         binding = state.binding
         capacity = self._fresh_capacity(state)
         if capacity <= 0:
@@ -779,6 +784,58 @@ class ArtifactProcessingSupervisor:
         state.scan_in_progress = scan_in_progress
         state.next_schedule_at = next_schedule_at
         state.next_discovery_at = next_discovery_at
+        for scope in admitted:
+            self._enqueue(state, scope)
+
+    async def _discover_count(self, state: _FamilyState) -> None:
+        binding = state.binding
+        capacity = self._fresh_capacity(state)
+        if binding.automatic_count_filter is None or capacity <= 0:
+            return
+        if asyncio.get_running_loop().time() < state.next_count_at:
+            return
+        limit = min(capacity, _DISCOVERY_PAGE_SIZE)
+        upper_sequence = state.count_upper_sequence
+        admitted: list[str] = []
+        async with self._database.transaction() as connection:
+            await self._leases.require_fence(connection, self._require_current_fence())
+            if upper_sequence is None:
+                upper_sequence = await self._intents.max_sequence(connection, binding.binding_name)
+            rows = await self._intents.scan(
+                connection,
+                binding.binding_name,
+                after_sequence=state.count_after,
+                limit=limit,
+                dirty_only=True,
+                upper_sequence=upper_sequence,
+            )
+            candidates = tuple(
+                row.scope_id
+                for row in rows
+                if row.scope_id not in state.queued
+                and row.scope_id not in state.running
+                and row.scope_id not in state.retries
+                and row.requested_generation == row.handled_generation
+            )
+            eligible = await binding.automatic_count_filter(connection, candidates)
+            if candidates and binding.automatic_scope_filter is not None:
+                eligible &= await binding.automatic_scope_filter(connection, candidates)
+            for scope in candidates:
+                if scope not in eligible:
+                    continue
+                current = await self._intents.load(connection, scope, binding.binding_name, for_update=True)
+                if current is not None and current.requested_generation == current.handled_generation:
+                    await self._intents.request(connection, scope, binding.binding_name)
+                    admitted.append(scope)
+        # Admission and pagination become visible only after commit. Polling
+        # covers every journal writer, including lineage projection and children,
+        # without coupling capture adapters to supervisor notifications.
+        more = len(rows) == limit
+        state.count_after = rows[-1].pending_sequence if more else 0
+        state.count_upper_sequence = upper_sequence if more else None
+        state.next_count_at = asyncio.get_running_loop().time() + (
+            _DISCOVERY_PAGE_DELAY_SECONDS if more else self._tick
+        )
         for scope in admitted:
             self._enqueue(state, scope)
 
@@ -1058,6 +1115,9 @@ class ArtifactProcessingSupervisor:
             state.overflow_not_before = 0.0
             state.retries.clear()
             state.requested_after = state.scan_after = state.scan_generation = 0
+            state.count_after = 0
+            state.count_upper_sequence = None
+            state.next_count_at = 0.0
             state.scan_in_progress = False
             state.discovery_pending = True
 
@@ -1093,6 +1153,8 @@ class ArtifactProcessingSupervisor:
                 continue
             if state.next_schedule_at is not None:
                 deadlines.append(state.next_schedule_at)
+            if state.binding.automatic_count_filter is not None:
+                deadlines.append(state.next_count_at)
             if state.discovery_pending or state.scan_in_progress or not state.reconcile_complete or state.degraded:
                 deadlines.append(max(now, state.next_discovery_at))
         return None if not deadlines else max(0.001, min(deadlines) - now)

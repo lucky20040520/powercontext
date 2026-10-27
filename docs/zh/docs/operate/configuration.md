@@ -68,6 +68,7 @@ Server 配置使用 `POWERCONTEXT_SERVER_` 前缀。
 | `POWERCONTEXT_SERVER_DATABASE_BUSY_TIMEOUT_MS` | `5000` | 业务连接等待 SQLite 单一写锁的毫秒数；它不约束用量记账，后者有自己的有界预算 |
 | `POWERCONTEXT_SERVER_RUNTIME_SCOPE_CACHE_SIZE` | `128` | Runtime 保留的非活动 scope composition 数量；进行中的 scope 不会被驱逐 |
 | `POWERCONTEXT_SERVER_RUNTIME_SOURCE_WINDOW_LIMIT` | `100` | 单次 activation 最多处理的 Source 数量 |
+| `POWERCONTEXT_SERVER_RUNTIME_MEMORY_SOURCE_COUNT_THRESHOLD` | 未设置 | 待处理 Source 数量达到此正整数时接纳一个 Memory 窗口，与定时条件独立 |
 | `POWERCONTEXT_SERVER_RUNTIME_CONTEXT_ASSEMBLY_MAX_ENTRIES` | `8` | 显式 `assembly.sections[].limit` 之和的上限；正整数，各类别单独上限仍适用 |
 | `POWERCONTEXT_SERVER_RUNTIME_MEMORY_EXTRACTION_PROFILE` | `coding` | Memory 选择策略：`coding` 或 `conversation` |
 | `POWERCONTEXT_SERVER_RUNTIME_MEMORY_RERANK_ENABLED` | `false` | 在 Memory 粗召回后应用 listwise rerank |
@@ -82,7 +83,8 @@ Server 配置使用 `POWERCONTEXT_SERVER_` 前缀。
 | `POWERCONTEXT_SERVER_RUNTIME_RECALL_GATE_ROUND2_MIN_SEMANTIC_SIMILARITY` | `0.10` | 第二轮追加搜索使用的语义相似度准入下限；启用时不得高于第一轮的值 |
 | `POWERCONTEXT_SERVER_RUNTIME_RECALL_GATE_ALLOW_WITH_RERANK` | `false` | 已启用 `MEMORY_RERANK_ENABLED` 时是否仍允许追加搜索；默认在 rerank 之后不再追加 |
 | `POWERCONTEXT_SERVER_RUNTIME_MEMORY_SCHEDULE_SECONDS` | 未设置 | Memory 自动准入间隔；`SCHEDULE_SECONDS` 保留为兼容别名 |
-| `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SCHEDULE_SECONDS` | 未设置 | Topic Memory 自动准入间隔；未设置时不接纳新的自动调用 |
+| `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SCHEDULE_SECONDS` | 未设置 | Topic Memory 自动准入间隔；未设置时关闭时间准入 |
+| `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SOURCE_COUNT_THRESHOLD` | 未设置 | 待处理 Source 数量达到此正整数时接纳一个 Topic Memory wave，与定时条件独立 |
 | `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SOURCE_WINDOW_LIMIT` | `10` | 每个 Topic Memory Window 的 Source 数量上限，硬上限为 100；一次 Scope 调用可完成多个 Window |
 | `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_HISTORY_MAX_CANDIDATES` | `20` | 处理时考虑的历史 Topic 候选上限 |
 | `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_HISTORY_RRF_THRESHOLD` | `70` | 归一化到 `0..100` 的 RRF 接受阈值 |

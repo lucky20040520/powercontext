@@ -14,7 +14,7 @@ Work Contract 和 Task Outcome 也会保留 Source 证据。
    并保留返回的 Source 引用。
 2. 使用 `GET /v1/scopes/{scope_id}/sources` 浏览 Source journal，再通过
    `GET /v1/scopes/{scope_id}/sources/{source_type}/{source_id}` 读取选中的 Source。
-3. 将符合条件的证据处理为 Memory，需要配置生成模型，并启用定时处理或显式执行 Memory flush。
+3. 将符合条件的证据处理为 Memory，需要配置生成模型，并启用定时处理、Source 数量门槛或显式执行 Memory flush。
    步骤见[启用提取与向量搜索](../get-started/configure-models.md)。
 
 采集成功表示证据已保存，不表示提取成功，也不表示内容一定值得长期保留。
@@ -28,6 +28,38 @@ Work Contract 和 Task Outcome 也会保留 Source 证据。
 - 应用或评测事件：使用应用对应适配器；[Bub 采集](../integrations/evaluation.md)需要显式启用。
 
 Source 读写受所选 [Scope 与访问策略](scopes-and-access.md)约束。
+
+## 按新增 Source 数量启动处理
+
+在 `RuntimeConfig` 中分别设置严格的正整数门槛：
+
+```python
+from powercontext.builtin.runtime import RuntimeConfig
+
+runtime_policy = RuntimeConfig(
+    memory_source_count_threshold=3,
+    topic_memory_source_count_threshold=5,
+    source_window_limit=1,
+    topic_memory_source_window_limit=2,
+)
+```
+
+两个门槛默认均为 `None`，表示关闭数量触发。Python 配置拒绝布尔值、字符串、浮点数、零和负数。
+Server 环境变量使用十进制整数文本，例如 `POWERCONTEXT_SERVER_RUNTIME_MEMORY_SOURCE_COUNT_THRESHOLD=3`
+和 `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SOURCE_COUNT_THRESHOLD=5`。仍需配置生成服务并启用对应处理族。
+通过 HTTP、MCP 采集的 Source 同样受这些配置控制；采集完成即返回，生成在后台异步执行。
+
+每个 Scope、每个处理族独立计数：已提交的 Source journal 末尾位置减去该处理族最后一次成功提交的 cursor。
+重复采集同一身份、升级已有 receipt 的信任信息都不增加条目。仅供 lineage 使用的 Source 参与启动计数，
+但仍不会进入生成证据。原生 supervisor 分页检查待处理元数据，每完成一轮检查后等待一秒。
+检查不读取 Source 正文，也不调用模型；工作量随脏 Scope 数量增长，其中包含尚未达到门槛的 Scope。
+
+数量条件与时间条件独立，任一满足即可启动；显式调用 Memory 或 Topic Memory 的 `flush()` 也会绕过门槛。
+例如 Memory 门槛为 3、`source_window_limit=1` 时，三个新条目只启动一窗；剩余两个等待另一个新条目、
+定时条件或显式 flush。Topic Memory 已接受的 wave 会继续完成全部分窗，下一 wave 才重新应用门槛。
+
+已接受的工作沿用现有重试机制，发布失败不会推进成功 cursor。重开同一数据库仍会保留待处理条目和已接受请求，
+成功处理后照常提供可检索结果和精确 Source 引用。数量检查不会重置定时调度的 checkpoint。
 
 ## 在 Python 中逐行采集 CSV
 
