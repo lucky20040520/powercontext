@@ -40,6 +40,41 @@ Embedding 连接可以与 Generation 共用地址和凭据，但通常使用不�
 向量维度必须是所选 Embedding 模型实际支持的输出维度。Embedding Profile ID 是标识这套模型、维度和向量约定的名称，
 不是额外 API key。首次使用可接受向导建议；复用已有向量数据时，必须保持其对应关系，不能随意改 ID 或维度来消除报错。
 
+## 在 Python 中共享 Embedding 请求
+
+用 `CoalescingEmbeddingModel` 包装已有 `EmbeddingModel`，让并发调用共享重复文本的计算，并缓存成功向量：
+
+```python
+import asyncio
+
+from powercontext.builtin.inference import CoalescingEmbeddingModel, EmbeddingModel
+
+
+async def embed_notes(base_model: EmbeddingModel):
+    model = CoalescingEmbeddingModel(base_model, max_batch_size=64, coalesce_ms=5.0, cache_size=1024)
+    return await asyncio.gather(
+        model.embed(("发布决定", "运行约束")),
+        model.embed(("运行约束", "发布决定", "发布决定")),
+    )
+```
+
+在同一事件循环中复用一个包装器，将其作为 `embedding_model=model` 传给 `open_builtin_contexts(...)`
+或 `open_builtin_runtime(...)`，即可用于原生 Memory 向量索引和搜索。包装器保留底层模型的 Profile。
+此功能由调用方显式启用；普通模型调用和 Server 默认行为保持原样。
+
+`max_batch_size` 是正整数，限制每次底层请求中的不同文本数量。`coalesce_ms` 是有限的非负延迟，单位为毫秒；
+设为零仍可共享排队中及正在执行的工作。`cache_size` 是非负整数，限制成功向量的 LRU 缓存容量；
+设为零关闭已完成结果的跨调用复用，但仍共享执行中的请求。文本按原值精确匹配，不裁剪或规范化，缓存命中会刷新最近使用顺序。
+缓存内存随容量和向量维度增长，排队及执行中的状态随未完成的不同输入数量增长。
+
+每个调用按自身输入顺序返回向量，保留重复位置。`usage` 对该调用等待过的每个底层批次仅汇总一次，保留 Provider
+报告的请求数和 token 数。共享批次可分别计入多个调用，因此调用方用量之和不能直接当作 Provider 账单总量。
+纯缓存命中的请求数为零；未报告的 token 字段保持 `None`，除非另一个参与汇总的批次报告了该字段。
+
+取消调用不会取消共享底层工作。失败只传给依赖该批次的等待者，不写入缓存，之后可以重试；独立批次仍可完成。
+底层返回的向量数量与文本数量不符时抛出 `ValueError`。提供 `embed_query` 的模型分别缓存文档和查询向量，
+对称模型则共享两条路径。缓存仅存在于包装器内存中，不跨进程重启持久化。
+
 ## 完整能力不等于每条对话都会生成所有制品
 
 | 能力 | 自动产生内容的条件 |

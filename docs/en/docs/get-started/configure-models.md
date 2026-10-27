@@ -44,6 +44,44 @@ Its dimension must match an output size the selected model supports. The Embeddi
 of model, dimension, and vector conventions; it is not another API key. For a new database, you can use the suggested ID.
 With existing vectors, preserve their model/Profile/dimension relationship rather than changing it to suppress an error.
 
+## Share Embedding requests in Python
+
+Wrap an existing `EmbeddingModel` to share duplicate text across concurrent calls and cache successful vectors:
+
+```python
+import asyncio
+
+from powercontext.builtin.inference import CoalescingEmbeddingModel, EmbeddingModel
+
+
+async def embed_notes(base_model: EmbeddingModel):
+    model = CoalescingEmbeddingModel(base_model, max_batch_size=64, coalesce_ms=5.0, cache_size=1024)
+    return await asyncio.gather(
+        model.embed(("Launch decision", "Operating constraint")),
+        model.embed(("Operating constraint", "Launch decision", "Launch decision")),
+    )
+```
+
+Reuse one wrapper in the same event loop. Pass it as `embedding_model=model` to `open_builtin_contexts(...)` or
+`open_builtin_runtime(...)` to use it for native Memory indexing and vector search. The wrapper retains the base
+model's Profile. It is opt-in; ordinary model calls and Server defaults keep their existing behavior.
+
+`max_batch_size` is a positive integer limiting distinct texts per provider call. `coalesce_ms` is a finite,
+nonnegative delay; zero still permits concurrent callers to share queued and in-flight work. `cache_size` is a
+nonnegative integer limiting successful cached vectors; zero disables completed-result reuse while preserving
+in-flight sharing. Text equality is exact, without trimming or normalization. LRU hits refresh recency. Cache memory
+scales with capacity and vector dimension; queued/in-flight state scales with outstanding distinct inputs.
+
+Every result restores the caller's input order and duplicate positions. Its `usage` sums each provider batch that
+caller waited for once, preserving the provider's request and token counts. Shared batches can appear in more than
+one caller's usage, so summing caller usage is not a provider billing total. Pure cache hits return zero requests;
+unreported token fields remain `None` unless another contributing batch reports that field.
+
+Cancelling a caller leaves shared provider work running. A failed batch affects its own waiters, is not cached,
+and can be retried; independent batches can finish. A vector-count mismatch raises `ValueError`. Providers with
+`embed_query` keep document and query cache identities separate; symmetric providers share both paths. The cache is
+local to the wrapper and is not persisted across process restarts.
+
 ## Full capabilities do not generate every Artifact from every message
 
 | Capability | Conditions for generation |
