@@ -49,7 +49,8 @@ Source → background cursor → flush request → new or updated immutable Topi
 Use the configuration wizard to select full memory, or configure the deployment directly. Topic Memory needs:
 
 - a supported Generation model and valid provider credentials;
-- a positive `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SCHEDULE_SECONDS` value to admit new automatic work;
+- a positive `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SCHEDULE_SECONDS` interval or a positive integer
+  `POWERCONTEXT_SERVER_RUNTIME_TOPIC_MEMORY_SOURCE_COUNT_THRESHOLD` to admit new automatic work;
 - meaningful Source evidence in the Scope.
 
 Embedding is optional for Topic Memory itself. Configure a compatible Embedding model and dimension when the deployment
@@ -57,8 +58,10 @@ should offer vector or hybrid retrieval. The Server exposes the selected retriev
 do not choose arbitrary retrieval controls.
 
 The schedule is an admission interval, not a completion deadline. Topic generation also has provider and Worker
-timeouts. An unset schedule disables new automatic admission but does not discard already accepted work. For SQLite deployments, Topic Workers
-with a Generation model require a persistent, file-backed database rather than an in-memory database. See
+timeouts. New automatic admission is disabled when both the schedule and count threshold are unset; already accepted
+work is retained. See [Source count processing](sources.md#process-after-enough-new-sources) for counting and window
+behavior. For SQLite deployments, Topic Workers with a Generation model require a persistent, file-backed database
+rather than an in-memory database. See
 [Configure models and full memory](../get-started/configure-models.md) and
 [Configuration options](../operate/configuration.md) for the complete settings and deployment constraints.
 

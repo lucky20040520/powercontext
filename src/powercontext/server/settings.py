@@ -20,11 +20,12 @@ from collections.abc import Mapping
 from contextlib import suppress
 from ipaddress import ip_address
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+from typing_extensions import override
 
 from powercontext.builtin.artifacts.skill import AgentSkillTarget
 from powercontext.builtin.code.models import CodeConfig
@@ -217,6 +218,40 @@ class ServerSettings(BaseSettings):
     handoff_report: HandoffReportConfig = Field(default_factory=HandoffReportConfig)
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
     external_skills: ExternalSkillsConfig = Field(default_factory=ExternalSkillsConfig)
+
+    @classmethod
+    @override
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ):
+        del settings_cls
+
+        def read_source(source: PydanticBaseSettingsSource) -> dict[str, Any]:
+            values = source()
+            runtime = values.get("runtime")
+            if isinstance(runtime, dict):
+                # Environment values are text. Parse only decimal integers at
+                # this boundary; RuntimeConfig itself retains strict types.
+                runtime = dict(runtime)
+                for name in ("memory_source_count_threshold", "topic_memory_source_count_threshold"):
+                    value = runtime.get(name)
+                    if isinstance(value, str) and value.isascii() and value.isdecimal():
+                        runtime[name] = int(value)
+                values["runtime"] = runtime
+            return values
+
+        def count_environment_settings() -> dict[str, Any]:
+            return read_source(env_settings)
+
+        def count_dotenv_settings() -> dict[str, Any]:
+            return read_source(dotenv_settings)
+
+        return init_settings, count_environment_settings, count_dotenv_settings, file_secret_settings
 
     @field_validator("cursor_signing_secret")
     @classmethod

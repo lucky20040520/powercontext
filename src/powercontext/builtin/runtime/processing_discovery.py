@@ -74,3 +74,27 @@ class SourceProcessingPendingProvider:
                 if intent is None or intent.dirty_generation == intent.clean_generation:
                     await intents.mark_dirty(connection, scope, self._binding)
         return str(rows[-1][0]) if len(rows) == limit else None
+
+
+class SourceCountThreshold:
+    """Qualify a bounded Scope page using committed journal and Family cursors."""
+
+    def __init__(self, binding_name: str, threshold: int) -> None:
+        self._binding = binding_name
+        self._threshold = threshold
+
+    async def __call__(self, connection: AsyncConnection, scope_ids: tuple[str, ...]) -> frozenset[str]:
+        if not scope_ids:
+            return frozenset()
+        heads = SOURCE_JOURNAL_HEADS_TABLE
+        rows = await connection.execute(
+            select(heads.c.scope_id, heads.c.position).where(heads.c.scope_id.in_(scope_ids))
+        )
+        cursors = await SourceCursorRepository().load_many(connection, scope_ids, self._binding)
+        # Journal positions are allocated consecutively per Scope, including
+        # lineage-only Sources. Replays and receipt upgrades allocate no position.
+        return frozenset(
+            scope
+            for scope, high in rows
+            if int(high) - (cursors[scope].cursor.sequence if scope in cursors else 0) >= self._threshold
+        )
