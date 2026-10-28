@@ -1,0 +1,120 @@
+﻿
+=== financebench_id_01009 ===
+Q: What are the geographies that Pepsico primarily operates in as of FY2022?
+hits: 20
+  #1 page=6 :: PEPSICO_2022_10K Table of Contents also, either independently or in conjunction with third
+  #2 page=100 :: PEPSICO_2022_10K Table of Contents we immediately recognize the related hedging gains or l
+  #3 page=5 :: PEPSICO_2022_10K Table of Contents 6) Africa, Middle East and South Asia (AMESA), which in
+  #4 page=15 :: PEPSICO_2022_10K Table of Contents inclusion, workplace conditions and employee health and
+  #5 page=7 :: PEPSICO_2022_10K Table of Contents Direct-Store-Delivery We, our independent bottlers and 
+  #6 page=55 :: PEPSICO_2022_10K Table of Contents Material changes in line items in our consolidated bala
+  #7 page=109 :: PEPSICO_2022_10K Table of Contents Goodwill is calculated as the excess of the aggregate o
+  #8 page=9 :: PEPSICO_2022_10K Table of Contents Our Customers Our customers include wholesale and other
+  #9 page=43 :: PEPSICO_2022_10K Table of Contents Operating Profit/(Loss) Performance and Operating Profi
+  #10 page=104 :: PEPSICO_2022_10K Table of Contents Note 11 — Accumulated Other Comprehensive Loss Attribut
+  #11 page=114 :: PEPSICO_2022_10K Table of Contents based on volumes sold and terms of the sales incentives
+  #12 page=239 :: PEPSICO_2022_10K ARTICLE X – SIGNATURE     The PepsiCo International Retirement Plan, DC P
+  #13 page=53 :: PEPSICO_2022_10K Table of Contents The table below summarizes our cash activity:  2022 202
+  #14 page=205 :: PEPSICO_2022_10K ARTICLE X - SIGNATURE     The PepsiCo International Retirement Plan, DB P
+  #15 page=82 :: PEPSICO_2022_10K Table of Contents The change in the book value of indefinite-lived intang
+  #16 page=495 :: PEPSICO_2022_10K Consent of Independent Registered Public Accounting Firm To the Board of 
+  #17 page=72 :: PEPSICO_2022_10K Table of Contents A summary of pre-tax charges taken in 2022 as a result 
+  #18 page=338 :: PEPSICO_2022_10K ARTICLE XII Signature The PepsiCo Pension Equalization Plan, 409A Program
+  #19 page=335 :: PEPSICO_2022_10K ARTICLE X ERISA Plan Structure This Plan document in conjunction with the
+  #20 page=128 :: PEPSICO_2022_10K Table of Contents 10.19 PepsiCo, Inc. Executive Incentive Compensation Pl
+
+=== financebench_id_00735 ===
+Q: Has Pepsico reported any materially important ongoing legal battles from FY2022 and FY2021?
+hits: 20
+  #1 page=24 :: PEPSICO_2022_10K Table of Contents continue to increase over time, particularly as additio
+  #2 page=118 :: PEPSICO_2022_10K Table of Contents Item 7A. Quantitative and Qualitative Disclosures About
+  #3 page=26 :: PEPSICO_2022_10K Table of Contents Item 2. Properties. Our principal executive office loca
+  #4 page=25 :: PEPSICO_2022_10K Table of Contents compliance with competition and antitrust laws is of sp
+  #5 page=119 :: PEPSICO_2022_10K Table of Contents productivity plan and resulting business process change
+  #6 page=4 :: PEPSICO_2022_10K Table of Contents Forward-Looking Statements This Annual Report on Form 1
+  #7 page=68 :: PEPSICO_2022_10K Table of Contents Notes to Consolidated Financial Statements Note 1 — Bas
+  #8 page=20 :: PEPSICO_2022_10K Table of Contents maintain insurance coverage that, subject to its terms 
+  #9 page=37 :: PEPSICO_2022_10K Table of Contents oversight of financial, compliance and employee safety 
+  #10 page=19 :: PEPSICO_2022_10K Table of Contents with customers and consumers; ordering and managing inv
+  #11 page=218 :: PEPSICO_2022_10K ARTICLE II – DEFINITIONS AND CONSTRUCTION 2.01    Definitions. Where the 
+  #12 page=3 :: PEPSICO_2022_10K Table of Contents PepsiCo, Inc. Form 10-K Annual Report For the Fiscal Ye
+  #13 page=177 :: PEPSICO_2022_10K ARTICLE II - DEFINITIONS AND CONSTRUCTION 2.01    Definitions. Where the 
+  #14 page=198 :: PEPSICO_2022_10K these respects shall be made as are necessary to maximize the extent to w
+  #15 page=76 :: PEPSICO_2022_10K Table of Contents Advertising and other marketing activities, reported as
+  #16 page=232 :: PEPSICO_2022_10K these respects shall be made as are necessary to maximize the extent to w
+  #17 page=502 :: PEPSICO_2022_10K CERTIFICATION I, Hugh F. Johnston, certify that:   1. I have reviewed thi
+  #18 page=15 :: PEPSICO_2022_10K Table of Contents inclusion, workplace conditions and employee health and
+  #19 page=86 :: PEPSICO_2022_10K Table of Contents Reserves A number of years may elapse before a particul
+  #20 page=501 :: PEPSICO_2022_10K EXHIBIT 31 CERTIFICATION I, Ramon L. Laguarta, certify that:   1. I have 
+
+=== financebench_id_01328 ===
+Q: What is the quantity of restructuring costs directly outlined in Pepsico's income statements for FY2022? If restructuring costs are not explicitly outlined then state 0.
+hits: 20
+  #1 page=55 :: PEPSICO_2022_10K Table of Contents Material changes in line items in our consolidated bala
+  #2 page=62 :: PEPSICO_2022_10K Table of Contents Consolidated Statement of Income PepsiCo, Inc. and Subs
+  #3 page=49 :: PEPSICO_2022_10K Table of Contents 2021 Cost of sales Gross profit Selling, general and ad
+  #4 page=78 :: PEPSICO_2022_10K Table of Contents Recently Issued Accounting Pronouncements - Not Yet Ado
+  #5 page=103 :: PEPSICO_2022_10K Table of Contents Losses/(gains) on our hedging instruments are categoriz
+  #6 page=83 :: PEPSICO_2022_10K Table of Contents (f) Translation and other primarily reflects the deprec
+  #7 page=57 :: PEPSICO_2022_10K Table of Contents Our critical accounting policies and estimates are: • r
+  #8 page=79 :: PEPSICO_2022_10K Table of Contents 2022 2021 2020 Plan to Date through 12/31/2022 FLNA $ 4
+  #9 page=48 :: PEPSICO_2022_10K Table of Contents operating results and trends. We define net ROIC, exclu
+  #10 page=56 :: PEPSICO_2022_10K Table of Contents Return on Invested Capital ROIC is a non-GAAP financial
+  #11 page=105 :: PEPSICO_2022_10K Table of Contents The following table summarizes the reclassifications fr
+  #12 page=93 :: PEPSICO_2022_10K Table of Contents value of benefits earned by employees for working durin
+  #13 page=46 :: PEPSICO_2022_10K Table of Contents negatively impacted by a 25-percentage-point impact of 
+  #14 page=31 :: PEPSICO_2022_10K Table of Contents Item 7. Management’s Discussion and Analysis of Financi
+  #15 page=71 :: PEPSICO_2022_10K Table of Contents Disaggregation of Net Revenue Our primary performance o
+  #16 page=50 :: PEPSICO_2022_10K Table of Contents implementation of the 2019 Productivity Plan, in the fo
+  #17 page=107 :: PEPSICO_2022_10K Table of Contents Note 13 — Acquisitions and Divestitures Juice Transacti
+  #18 page=76 :: PEPSICO_2022_10K Table of Contents Advertising and other marketing activities, reported as
+  #19 page=40 :: PEPSICO_2022_10K Table of Contents Consolidated Net Revenue and Operating Profit  2022 202
+  #20 page=70 :: PEPSICO_2022_10K Table of Contents Pension and Retiree Medical Expense Pension and retiree
+
+=== financebench_id_03620 ===
+Q: What is the FY2022 unadjusted EBITDA less capex for PepsiCo? Define unadjusted EBITDA as unadjusted operating income + depreciation and amortization [from cash flow statement]. Answer in USD millions. Respond to the question by assuming the perspective of an investment analyst who can only use the details shown within the statement of cash flows and the income statement.
+hits: 20
+  #1 page=64 :: PEPSICO_2022_10K Table of Contents Consolidated Statement of Cash Flows PepsiCo, Inc. and 
+  #2 page=62 :: PEPSICO_2022_10K Table of Contents Consolidated Statement of Income PepsiCo, Inc. and Subs
+  #3 page=47 :: PEPSICO_2022_10K Table of Contents comprised of Russia-Ukraine conflict charges, brand por
+  #4 page=54 :: PEPSICO_2022_10K Table of Contents Free Cash Flow The table below reconciles net cash prov
+  #5 page=49 :: PEPSICO_2022_10K Table of Contents 2021 Cost of sales Gross profit Selling, general and ad
+  #6 page=103 :: PEPSICO_2022_10K Table of Contents Losses/(gains) on our hedging instruments are categoriz
+  #7 page=53 :: PEPSICO_2022_10K Table of Contents The table below summarizes our cash activity:  2022 202
+  #8 page=111 :: PEPSICO_2022_10K Table of Contents (e) Increase reflects higher commodity costs in 2022. A
+  #9 page=77 :: PEPSICO_2022_10K Table of Contents historical financial performance and significant change
+  #10 page=48 :: PEPSICO_2022_10K Table of Contents operating results and trends. We define net ROIC, exclu
+  #11 page=65 :: PEPSICO_2022_10K Table of Contents Consolidated Statement of Cash Flows (continued) PepsiC
+  #12 page=105 :: PEPSICO_2022_10K Table of Contents The following table summarizes the reclassifications fr
+  #13 page=55 :: PEPSICO_2022_10K Table of Contents Material changes in line items in our consolidated bala
+  #14 page=106 :: PEPSICO_2022_10K Table of Contents Components of lease cost are as follows: 2022 2021 2020
+  #15 page=46 :: PEPSICO_2022_10K Table of Contents negatively impacted by a 25-percentage-point impact of 
+  #16 page=100 :: PEPSICO_2022_10K Table of Contents we immediately recognize the related hedging gains or l
+  #17 page=63 :: PEPSICO_2022_10K Table of Contents Consolidated Statement of Comprehensive Income PepsiCo,
+  #18 page=71 :: PEPSICO_2022_10K Table of Contents Disaggregation of Net Revenue Our primary performance o
+  #19 page=68 :: PEPSICO_2022_10K Table of Contents Notes to Consolidated Financial Statements Note 1 — Bas
+  #20 page=107 :: PEPSICO_2022_10K Table of Contents Note 13 — Acquisitions and Divestitures Juice Transacti
+
+=== financebench_id_04481 ===
+Q: What is the FY2022 unadjusted EBITDA % margin for PepsiCo? Calculate unadjusted EBITDA using unadjusted operating income and D&A (from cash flow statement). Give a response to the question by relying on the details shown in the statement of cash flows and the P&L statement.
+hits: 20
+  #1 page=64 :: PEPSICO_2022_10K Table of Contents Consolidated Statement of Cash Flows PepsiCo, Inc. and 
+  #2 page=54 :: PEPSICO_2022_10K Table of Contents Free Cash Flow The table below reconciles net cash prov
+  #3 page=62 :: PEPSICO_2022_10K Table of Contents Consolidated Statement of Income PepsiCo, Inc. and Subs
+  #4 page=111 :: PEPSICO_2022_10K Table of Contents (e) Increase reflects higher commodity costs in 2022. A
+  #5 page=49 :: PEPSICO_2022_10K Table of Contents 2021 Cost of sales Gross profit Selling, general and ad
+  #6 page=77 :: PEPSICO_2022_10K Table of Contents historical financial performance and significant change
+  #7 page=47 :: PEPSICO_2022_10K Table of Contents comprised of Russia-Ukraine conflict charges, brand por
+  #8 page=105 :: PEPSICO_2022_10K Table of Contents The following table summarizes the reclassifications fr
+  #9 page=103 :: PEPSICO_2022_10K Table of Contents Losses/(gains) on our hedging instruments are categoriz
+  #10 page=53 :: PEPSICO_2022_10K Table of Contents The table below summarizes our cash activity:  2022 202
+  #11 page=100 :: PEPSICO_2022_10K Table of Contents we immediately recognize the related hedging gains or l
+  #12 page=106 :: PEPSICO_2022_10K Table of Contents Components of lease cost are as follows: 2022 2021 2020
+  #13 page=48 :: PEPSICO_2022_10K Table of Contents operating results and trends. We define net ROIC, exclu
+  #14 page=65 :: PEPSICO_2022_10K Table of Contents Consolidated Statement of Cash Flows (continued) PepsiC
+  #15 page=68 :: PEPSICO_2022_10K Table of Contents Notes to Consolidated Financial Statements Note 1 — Bas
+  #16 page=55 :: PEPSICO_2022_10K Table of Contents Material changes in line items in our consolidated bala
+  #17 page=40 :: PEPSICO_2022_10K Table of Contents Consolidated Net Revenue and Operating Profit  2022 202
+  #18 page=46 :: PEPSICO_2022_10K Table of Contents negatively impacted by a 25-percentage-point impact of 
+  #19 page=80 :: PEPSICO_2022_10K Table of Contents We regularly evaluate different productivity initiative
+  #20 page=58 :: PEPSICO_2022_10K Table of Contents See Note 2 to our consolidated financial statements for
