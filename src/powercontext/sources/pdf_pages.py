@@ -316,7 +316,21 @@ _GEOGRAPHY_TERMS = frozenset({
     "country",
     "international",
     "market",
+    "division",
+    "segment",
 })
+_GEOGRAPHIC_CONTEXT = (
+    "north america",
+    "latin america",
+    "south america",
+    "europe",
+    "asia",
+    "africa",
+    "middle east",
+    "pacific",
+    "emea",
+    "apac",
+)
 
 
 def _query_terms(question: str) -> tuple[dict[str, float], tuple[tuple[str, ...], ...]]:
@@ -331,6 +345,8 @@ def _query_terms(question: str) -> tuple[dict[str, float], tuple[tuple[str, ...]
     expansions.extend(
         alternatives for metric, alternatives in _METRICS.items() if " " + " ".join(_tokens(metric)) + " " in normalized
     )
+    if _GEOGRAPHY_TERMS & terms.keys():
+        expansions.append(_GEOGRAPHIC_CONTEXT)
     phrases: list[tuple[str, ...]] = []
     for concept in expansions:
         for phrase in concept:
@@ -375,11 +391,11 @@ async def search_pdf_pages(
                 seen.add(identity)
     if not records:
         return ()
-    return _rank_pages(_select_reports(records, question), terms, phrases, limit)
+    return _rank_pages(records, terms, phrases, limit, _report_weights(records, question))
 
 
-def _select_reports(records: list[MemoryEntryRecord], question: str) -> list[MemoryEntryRecord]:
-    """Honor explicit report identities before ranking page content across companies."""
+def _report_weights(records: list[MemoryEntryRecord], question: str) -> dict[str, float]:
+    """Treat company and year matches as hints without excluding other reports."""
 
     question_words = _IDENTITY_WORDS.findall(question.lower())
     # Joining neighboring words accommodates report IDs such as COCA_COLA and
@@ -395,20 +411,21 @@ def _select_reports(records: list[MemoryEntryRecord], question: str) -> list[Mem
         # Reporting periods and suffixes are not part of the company name.
         # Keep alphanumeric company tokens such as 3M intact.
         company_part = _REPORT_YEAR.split(document, maxsplit=1)[0]
-        company = "".join(
+        company_words = tuple(
             word
             for word in _IDENTITY_WORDS.findall(company_part.lower())
             if word not in _REPORT_SUFFIXES and not word.isdigit()
         )
+        company = "".join(company_words)
         if len(company) > 1 and company not in _STOPWORDS and company in mentioned_names:
             selected.add(document)
-    if not selected:
-        return records
     years = set(_REPORT_YEAR.findall(question))
-    matching_years = {document for document in selected if years.intersection(_REPORT_YEAR.findall(document))}
-    if matching_years:
-        selected = matching_years
-    return [record for record in records if record.entry.text.partition("\n")[0] in selected]
+    weights = {
+        document: (3.0 if document in selected else 1.0)
+        * (1.25 if years.intersection(_REPORT_YEAR.findall(document)) else 1.0)
+        for document in documents
+    }
+    return weights
 
 
 def _rank_pages(
@@ -416,6 +433,7 @@ def _rank_pages(
     terms: dict[str, float],
     phrases: tuple[tuple[str, ...], ...],
     limit: int,
+    report_weights: dict[str, float],
 ) -> tuple[MemoryCitation, ...]:
     """Score one exact corpus snapshot with length-normalized lexical evidence."""
 
@@ -427,6 +445,7 @@ def _rank_pages(
     idf = {term: math.log1p((len(records) - frequency[term] + 0.5) / (frequency[term] + 0.5)) for term in terms}
     ranked: list[tuple[float, int]] = []
     for index, (record, tokens, count) in enumerate(zip(records, token_lists, counts, strict=True)):
+        normalized = " " + " ".join(tokens) + " "
         normalization = 1.2 * (0.55 + 0.45 * len(tokens) / average_length)
         score = sum(
             weight * idf[term] * count[term] * 2.2 / (count[term] + normalization)
@@ -434,28 +453,36 @@ def _rank_pages(
             if count[term]
         )
         # Phrase matches favor actual statement bodies over incidental mentions.
-        normalized = " " + " ".join(tokens) + " "
         score += sum(
             sum(idf.get(term, 0.0) for term in phrase) * 0.6
             for phrase in phrases
             if " " + " ".join(phrase) + " " in normalized
         )
-        # Actual statement titles are stronger evidence than a long discussion
-        # repeating the same metrics. Restrict to complete heading lines near
-        # the page start, so prose and numbered table-of-contents rows do not win.
-        score += sum(
+        # A heading is supporting context, not evidence on its own. Check the
+        # remaining body and bound the combined bonus by twice the lexical score.
+        body = bodies[index]
+        content = body[:1000]
+        for _, heading in _STATEMENT_HEADINGS:
+            content = heading.sub(" ", content)
+        content = _BUSINESS_HEADING.sub(" ", content + body[1000:])
+        content_tokens = _tokens(content)
+        content_terms = set(content_tokens)
+        has_amount = any(token.isdigit() and not _REPORT_YEAR.fullmatch(token) for token in content_terms)
+        financial_evidence = any(vocabulary & terms.keys() & content_terms for vocabulary, _ in _STATEMENT_HEADINGS)
+        if has_amount and financial_evidence:
+            score *= 1.25
+        structural_bonus = sum(
             3.0 * sum(terms[term] * idf[term] for term in vocabulary & terms.keys())
             for vocabulary, heading in _STATEMENT_HEADINGS
-            if heading.search(bodies[index][:1000])
+            if heading.search(body[:1000]) and vocabulary & terms.keys() & content_terms and has_amount
         )
-        if _GEOGRAPHY_TERMS & terms.keys() and _BUSINESS_HEADING.search(bodies[index]):
-            score += 3.0 * sum(terms[term] * idf[term] for term in _GEOGRAPHY_TERMS & terms.keys())
-        document_tokens = set(_tokens(record.entry.text.partition("\n")[0])) - {"10", "k", "q", "form", "report"}
-        company = {term for term in document_tokens if not term.isdigit() and terms.get(term) == 1.0}
-        if company:
-            score *= 2.0
-        if any(term.isdigit() and len(term) == 4 and terms.get(term) == 1.0 for term in document_tokens):
-            score *= 1.25
+        geography = {term for term in _GEOGRAPHY_TERMS if terms.get(term) == 1.0}
+        geographic_content = " " + " ".join(content_tokens) + " "
+        has_region = any(" " + " ".join(_tokens(region)) + " " in geographic_content for region in _GEOGRAPHIC_CONTEXT)
+        if geography and _BUSINESS_HEADING.search(body) and has_region:
+            structural_bonus += 3.0 * sum(idf[term] for term in geography)
+        score += min(2.0 * score, structural_bonus)
+        score *= report_weights[record.entry.text.partition("\n")[0]]
         if score > 0:
             ranked.append((score, index))
     ranked.sort(key=lambda item: (-item[0], item[1]))

@@ -218,7 +218,7 @@ async def _capture_pages(config: BuiltinConfig, pages: list[tuple[str, str]]) ->
         return scope.scope_id
 
 
-def test_explicit_company_and_report_year_exclude_other_report_distractors(tmp_path: Path) -> None:
+def test_report_hints_prioritize_matching_evidence_without_removing_other_reports(tmp_path: Path) -> None:
     config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'mixed.db'}"))
     pages = [
         ("NORTH_STAR_2025_10K", "Consolidated Statement of Income\n2025 Revenue 100 Cost of sales 60 Gross profit 40"),
@@ -236,15 +236,24 @@ def test_explicit_company_and_report_year_exclude_other_report_distractors(tmp_p
             citations = await search_pdf_pages(memory, "What is North Star's FY2025 gross margin?", limit=20)
             assert citations
             texts = [(await memory.get(GetMemoryEntryRequest(citation=citation))).entry.text for citation in citations]
-            assert all(text.startswith("NORTH_STAR_2025_10K\n") for text in texts)
+            assert texts[0].startswith("NORTH_STAR_2025_10K\n")
+            assert {text.split("\n", 1)[0] for text in texts} == {
+                "NORTH_STAR_2025_10K",
+                "NORTH_STAR_2024_10K",
+                "RIVAL_2025_10K",
+            }
             compared = await search_pdf_pages(memory, "Compare North Star's 2025 and 2024 gross margin", limit=20)
             comparison = [
                 (await memory.get(GetMemoryEntryRequest(citation=citation))).entry.text for citation in compared
             ]
-            assert {text.split("\n", 1)[0] for text in comparison} == {"NORTH_STAR_2025_10K", "NORTH_STAR_2024_10K"}
+            assert {text.split("\n", 1)[0] for text in comparison[:2]} == {
+                "NORTH_STAR_2025_10K",
+                "NORTH_STAR_2024_10K",
+            }
+            assert any(text.startswith("RIVAL_2025_10K\n") for text in comparison)
             both = await search_pdf_pages(memory, "Compare North Star and Rival gross margin for 2025", limit=20)
             companies = [(await memory.get(GetMemoryEntryRequest(citation=citation))).entry.text for citation in both]
-            assert {text.split("\n", 1)[0] for text in companies} == {"NORTH_STAR_2025_10K", "RIVAL_2025_10K"}
+            assert {text.split("\n", 1)[0] for text in companies[:2]} == {"NORTH_STAR_2025_10K", "RIVAL_2025_10K"}
 
     asyncio.run(run())
 
@@ -291,7 +300,8 @@ def test_report_identity_matching_and_fallback_keep_relevant_pages(tmp_path: Pat
             citations = await search_pdf_pages(memory, f"What was {company}'s revenue in 2024?", limit=20)
             assert citations
             texts = [(await memory.get(GetMemoryEntryRequest(citation=citation))).entry.text for citation in citations]
-            assert all(text.startswith(document + "\n") for text in texts)
+            assert texts[0].startswith(document + "\n")
+            assert {text.split("\n", 1)[0] for text in texts} == {document, "X3M_2025_10K"}
             # With no document identity in the question, search the entire scope.
             general = await search_pdf_pages(memory, "What is the reported revenue?", limit=20)
             identities = {
@@ -299,5 +309,112 @@ def test_report_identity_matching_and_fallback_keep_relevant_pages(tmp_path: Pat
                 for citation in general
             }
             assert identities == {document, "X3M_2025_10K"}
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("pages", "question", "expected_document"),
+    [
+        (
+            [
+                ("TARGET_2025_10K", "Target Corporation financial report. This page is intentionally left blank."),
+                (
+                    "ACME_2025_10K",
+                    "The target operating margin was 18 percent after commissioning the zircon plant.",
+                ),
+            ],
+            "What was the target operating margin after commissioning the zircon plant?",
+            "ACME_2025_10K",
+        ),
+        (
+            [
+                ("ACME_2025_10K", "Archive index for 2025 financial statements."),
+                (
+                    "ACME_2026_10K",
+                    "Comparative disclosure: in 2025, revenue from the zircon plant was 120 million.",
+                ),
+            ],
+            "What was Acme's revenue from the zircon plant in 2025?",
+            "ACME_2026_10K",
+        ),
+        (
+            [
+                ("ACME_2025_10K", "Archive index for financial statements."),
+                ("BETA_2026_10K", "Revenue from the zircon plant was 120 million."),
+            ],
+            "What was revenue from the zircon plant?",
+            "BETA_2026_10K",
+        ),
+    ],
+    ids=["ambiguous-company-word", "comparative-year", "no-identity"],
+)
+def test_report_hints_cannot_exclude_the_only_substantive_evidence(
+    tmp_path: Path, pages: list[tuple[str, str]], question: str, expected_document: str
+) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'hints.db'}"))
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, question, limit=1)
+            assert len(citations) == 1
+            record = await memory.get(GetMemoryEntryRequest(citation=citations[0]))
+            assert record.entry.text.startswith(expected_document + "\n")
+            assert "zircon plant" in record.entry.text
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "cover_text",
+    [
+        "The figures are not provided on this cover sheet for 2025.",
+        "Catalog reference 42 for 2025. The figures are not provided here.",
+    ],
+)
+def test_statement_headings_alone_cannot_outrank_substantive_financial_evidence(
+    tmp_path: Path, cover_text: str
+) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'titles.db'}"))
+    pages = [
+        (
+            "ACME_2025_10K",
+            "Consolidated Statements of Income\nConsolidated Statements of Cash Flows\n" + cover_text,
+        ),
+        (
+            "ACME_2025_10K",
+            "Operating income was 120 million. Depreciation amortization was 30 million.",
+        ),
+    ]
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, "Calculate EBITDA for Acme in 2025.", limit=1)
+            assert len(citations) == 1
+            record = await memory.get(GetMemoryEntryRequest(citation=citations[0]))
+            assert "Operating income was 120" in record.entry.text
+
+    asyncio.run(run())
+
+
+def test_geography_body_evidence_can_outrank_an_empty_business_heading(tmp_path: Path) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'geo-cover.db'}"))
+    pages = [
+        ("ACME_2025_10K", "Our Business\nThe figures are not provided on this cover sheet."),
+        ("ACME_2025_10K", "We operate instrument distribution centers throughout EMEA and APAC."),
+    ]
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, "What geographies does Acme operate in?", limit=1)
+            assert len(citations) == 1
+            record = await memory.get(GetMemoryEntryRequest(citation=citations[0]))
+            assert "EMEA and APAC" in record.entry.text
 
     asyncio.run(run())

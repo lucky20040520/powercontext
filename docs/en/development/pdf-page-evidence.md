@@ -45,14 +45,22 @@ for citation in citations:
 
 Retrieval reads active entries through the public scoped `Memory.list()` API. It
 uses the exact snapshot's citations and ranks complete page text with BM25,
-financial vocabulary expansion, statement phrases, and document/year matching.
-Recognized company names in report IDs select the candidate reports before page
-ranking. Matching report years are preferred when present; otherwise the named
-company's reports remain eligible. Questions naming several companies or years
-keep their matching reports. Without a recognized identity, the whole scope
-remains searchable. Business overview headings can supply geographical context
-even when the page uses regional names rather than repeating the question terms;
-those headings may occur after a long preamble.
+financial vocabulary expansion, statement phrases, and document/year hints.
+Every active PDF page remains eligible: company or year recognition never removes
+another report or revision. A company match supplies a 3x preference and a report
+year match supplies a 1.25x preference, bounded to 3.75x together. An absent match
+adds no corresponding preference. Original query terms remain available to text
+matching, and comparative disclosures in another year's report can be retrieved.
+
+Financial body text with relevant terms and numbers that do not match the year
+pattern receives a 1.25x base weight. Statement headings receive structural credit
+only with that supporting body evidence. The combined structural bonus cannot
+exceed twice the page's weighted lexical and phrase score. A cover sheet with
+headings or years alone receives no statement-heading credit. Explicit geography,
+region, or segment questions may expand toward general regional vocabulary such
+as Europe, EMEA, and APAC. Business-heading credit also requires a regional
+expression in the remaining body. Business headings after a long preamble remain
+recognizable; regional evidence without a business heading remains searchable.
 It returns at most `limit` distinct page Sources, ignoring unrelated memories and
 entries combining multiple Sources. Empty questions and nonpositive limits return
 an empty tuple. It uses no models, network, file reads, or persistent search cache.
@@ -65,13 +73,10 @@ persistence, and citation integrity. Hidden evidence recall and token-quality
 thresholds require the evaluator's withheld annotations and are not established
 by that selftest.
 
-A local scale check under the official 1-CPU, 2-GB container used 1,151 page
-observations made from replicas of the public report. Parsing the original 503
-pages took 7.3 seconds; persisting and flushing the synthetic corpus took 47.3
-seconds. After reopening Runtime, queries with the final ranking took about
-0.55–0.63 seconds each, with a process peak RSS of approximately 206 MiB.
-These measurements characterize this synthetic workload;
-they do not measure hidden-set recall or establish a general latency guarantee.
+In the official offline 1-CPU, 2-GB container, queries after reopening Runtime
+took about 0.30–0.36 seconds on the 503-page public sample and 0.23–0.31 seconds
+on the additional 294-page public sample. These measurements characterize those
+samples; they do not establish hidden-set performance or a general latency guarantee.
 
 Validation with the competition's fixed offline dependencies:
 
@@ -84,7 +89,7 @@ Additional behavior tests live in `tests/test_pdf_pages.py` and
 
 ## Public quality validation
 
-The implementation was evaluated on 2026-10-27 against the complete public PDF and all five published
+The implementation was evaluated on 2026-10-28 against the complete public PDF and all five published
 questions. The reference was restricted to those questions' eight evidence
 annotations, covering six distinct physical pages, from
 [FinanceBench's fixed public dataset](https://github.com/patronus-ai/financebench/blob/cc39aeb4afdf33909ee1412188bf89035950c2eb/data/financebench_open_source.jsonl).
@@ -135,7 +140,9 @@ per-annotation scoring rules applied.
 | Evidence-page Recall@20 | 5/6 = 0.8333333333 | Passed the 0.70 threshold for this sample |
 | Independent Poppler token-count cross-check | 294/294 pages within 90%–110% | Passed; not the platform frozen reference |
 
-One question still missed its reference page. This supplementary public sample
-does not establish the challenge's withheld-split score. The public and withheld
-splits must each satisfy Recall@20 ≥0.70 independently; scores cannot be pooled to
-compensate for a failing split.
+All 503 public page texts and all 294 additional public page texts matched the
+fixed control exactly. Recall@20 remained 1.000 and 0.8333333333 respectively.
+One additional question still missed its reference page. This supplementary
+public sample does not establish the challenge's withheld-split score. The public
+and withheld splits must each satisfy Recall@20 ≥0.70 independently; scores cannot
+be pooled to compensate for a failing split.
