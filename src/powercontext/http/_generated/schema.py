@@ -8353,7 +8353,7 @@ OPENAPI_SCHEMA: dict[str, JsonValue] = {
                     "text": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Must not exceed 8192 UTF-8 bytes after normalization.",
+                        "description": "Must not exceed 32768 UTF-8 bytes after normalization.",
                     },
                     "reason": {"type": "string", "maxLength": 512, "nullable": True},
                     "expected_revision": {"type": "integer", "minimum": 1.0, "nullable": True},
@@ -8479,7 +8479,7 @@ OPENAPI_SCHEMA: dict[str, JsonValue] = {
                     "text": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Must not exceed 8192 UTF-8 bytes after normalization.",
+                        "description": "Must not exceed 32768 UTF-8 bytes after normalization.",
                     },
                     "reason": {"type": "string", "maxLength": 512, "nullable": True},
                 },

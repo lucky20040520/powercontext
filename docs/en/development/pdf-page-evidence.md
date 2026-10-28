@@ -44,7 +44,13 @@ for citation in citations:
 ```
 
 Retrieval reads active entries through the public scoped `Memory.list()` API. It
-uses the exact snapshot's citations and ranks complete page text with BM25,
+preserves complete page projections up to Memory's 32768 UTF-8 byte entry bound
+after NFC normalization and trimming. Longer entries fail Memory validation;
+the parser does not truncate their page text. Existing entry hashes and citations
+remain unchanged. The collection's configured entry and manifest budgets must
+also accommodate every page. Processes reading new long entries must support
+the 32 KiB bound; runtimes enforcing 8 KiB cannot read those entries.
+It uses the exact snapshot's citations and ranks complete page text with BM25,
 financial vocabulary expansion, statement phrases, and document/year hints.
 Every active PDF page remains eligible: company or year recognition never removes
 another report or revision. A company match supplies a 3x preference and a report

@@ -224,7 +224,7 @@ Errors use one JSON envelope:
 }
 ```
 
-For `/v1/memory/remember` and `/v1/memory/entries/revise`, entry text is limited to 8192 UTF-8 bytes
+For `/v1/memory/remember` and `/v1/memory/entries/revise`, entry text is limited to 32768 UTF-8 bytes
 after Unicode NFC normalization and trimming leading and trailing whitespace. This is a byte limit, not a
 character limit. An oversized entry returns HTTP `422` with the existing top-level `invalid_request` code:
 
@@ -235,7 +235,7 @@ character limit. An oversized entry returns HTTP `422` with the existing top-lev
     "message": "The request is invalid.",
     "details": {
       "code": "text-too-long",
-      "message": "memory entry text must not exceed 8192 UTF-8 bytes"
+      "message": "memory entry text must not exceed 32768 UTF-8 bytes"
     }
   }
 }

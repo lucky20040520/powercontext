@@ -218,6 +218,27 @@ async def _capture_pages(config: BuiltinConfig, pages: list[tuple[str, str]]) ->
         return scope.scope_id
 
 
+def test_complete_long_page_remains_retrievable_after_restart(tmp_path: Path) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'long-page.db'}"))
+    body = "Revenue 2025 was 120 million. 财报完整正文。\n" * 240 + "Final debt maturity evidence 987654321."
+    expected = "ACME_2025_10K\n" + body
+    assert 8192 < len(expected.encode("utf-8")) < 32768
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, [("ACME_2025_10K", body)])
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, "Acme final debt maturity evidence 987654321", limit=1)
+            assert len(citations) == 1
+            record = await memory.get(GetMemoryEntryRequest(citation=citations[0]))
+            assert record.entry.text == expected
+        async with open_builtin_runtime(config) as runtime:
+            record = await runtime.memory.for_scope(scope_id).get(GetMemoryEntryRequest(citation=citations[0]))
+            assert record.entry.text == expected
+
+    asyncio.run(run())
+
+
 def test_report_hints_prioritize_matching_evidence_without_removing_other_reports(tmp_path: Path) -> None:
     config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'mixed.db'}"))
     pages = [

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
 from sqlalchemy import BigInteger, DateTime, Integer, String
 from sqlalchemy.dialects import mysql
 from sqlalchemy.schema import CreateTable, ForeignKeyConstraint, PrimaryKeyConstraint, UniqueConstraint
@@ -133,7 +134,15 @@ def test_sqlite_memory_backend_commits_authoritative_history_and_fts() -> None:
     asyncio.run(scenario())
 
 
-def test_sqlite_memory_backend_rebuilds_head_and_fts_projections() -> None:
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Rebuild search projections from authoritative revisions.",
+        "Rebuild search projections from authoritative revisions.\n" + "Complete financial page evidence. " * 400,
+    ],
+    ids=["short-entry", "complete-long-page"],
+)
+def test_sqlite_memory_backend_rebuilds_head_and_fts_projections(text: str) -> None:
     async def scenario() -> None:
         async with open_builtin_contexts(BuiltinConfig(database=SQLiteConfig())) as contexts:
             context = await contexts.get("project")
@@ -142,7 +151,7 @@ def test_sqlite_memory_backend_rebuilds_head_and_fts_projections() -> None:
                 entries=(
                     MemoryEntryInput(
                         kind="decision",
-                        text="Rebuild search projections from authoritative revisions.",
+                        text=text,
                     ),
                 ),
                 mode="append",
@@ -167,9 +176,7 @@ def test_sqlite_memory_backend_rebuilds_head_and_fts_projections() -> None:
                 memories=(memory,),
                 mode="fts",
             )
-            assert tuple(hit.text for hit in rebuilt.hits) == (
-                "Rebuild search projections from authoritative revisions.",
-            )
+            assert tuple(hit.text for hit in rebuilt.hits) == (text.strip(),)
 
     asyncio.run(scenario())
 
