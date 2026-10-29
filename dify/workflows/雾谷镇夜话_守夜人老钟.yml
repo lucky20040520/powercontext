@@ -1,5 +1,5 @@
 app:
-  description: '雾谷镇守夜人老钟，记性好到吓人。答应过的事、骗过他的谎、送过他的酒，他都记着。来和这个会翻旧账的 NPC 聊聊天。'
+  description: '雾谷镇守夜人老钟，记性好到吓人。答应过的事、骗过他的谎、送过他的酒，他都记着。来和这个会翻旧账的 NPC 聊聊天。本作品使用 Dify 编排核心流程，接入 PowerContext（powercontext，PowerContext HTTP API）保存并复用会话记忆。'
   icon: 🏮
   icon_background: '#FFEAD5'
   mode: advanced-chat
@@ -15,7 +15,7 @@ version: 0.3.0
 workflow:
   conversation_variables: []
   environment_variables:
-    - description: PowerContext Server 地址（默认本地 8000 端口）
+    - description: PowerContext（powercontext）Server 地址（默认本地 8000 端口）
       id: env-pc-url
       name: POWERCONTEXT_URL
       selector:
@@ -23,7 +23,7 @@ workflow:
         - POWERCONTEXT_URL
       value: http://127.0.0.1:8000
       value_type: string
-    - description: PowerContext 鉴权 Token（Server 未启用鉴权时留空即可）
+    - description: PowerContext（powercontext）鉴权 Token（Server 未启用鉴权时留空即可）
       id: env-pc-token
       name: POWERCONTEXT_TOKEN
       selector:
