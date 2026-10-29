@@ -1,0 +1,64 @@
+{
+  "runAt": "2026-10-29T12:09:50.014Z",
+  "backend": "seekdb",
+  "assertions": [
+    {
+      "name": "知识库可读写",
+      "pass": true,
+      "detail": "当前文档数 4"
+    },
+    {
+      "name": "检索命中相关资料",
+      "pass": true,
+      "detail": "top1: 向量数据库的索引结构：HNSW 通过多层跳表加速近邻搜索，查…"
+    },
+    {
+      "name": "混合检索（关键词+语义）非空",
+      "pass": true,
+      "detail": "命中 4 条"
+    },
+    {
+      "name": "记忆写入成功",
+      "pass": true,
+      "detail": "artifact_id=art_705ca78a9e034efa9e496d0f2ea94df4"
+    },
+    {
+      "name": "记忆召回命中",
+      "pass": true,
+      "detail": "top: 【来源：考研数学复习笔记.md】考研数学复习：泰勒展开、拉格…"
+    },
+    {
+      "name": "周报生成包含进展与检索",
+      "pass": true,
+      "detail": "status=3, 检索 3 次"
+    }
+  ],
+  "techEvidence": {
+    "seekdb": {
+      "role": "知识库存储与检索（向量 hnsw 512 维 + ik 全文混合检索）",
+      "available": true,
+      "note": "本次验证实际由 seekdb 提供检索",
+      "count": 4,
+      "search": {
+        "query": "索引结构",
+        "topHit": "向量数据库的索引结构：HNSW 通过多层跳表加速近邻搜索，查询快但内存占用高；I"
+      },
+      "hybrid": {
+        "keyword": "向量",
+        "semantic": "资料调研",
+        "hits": 4
+      }
+    },
+    "powercontext": {
+      "role": "长期记忆（跨会话复用）+ 降级路径的资料存储",
+      "write": {
+        "artifact_id": "art_705ca78a9e034efa9e496d0f2ea94df4",
+        "text": "验证：scenario-demo 运行于 2026-10-29T12:09:50"
+      },
+      "recall": {
+        "query": "数学复习",
+        "hits": 1
+      }
+    }
+  }
+}

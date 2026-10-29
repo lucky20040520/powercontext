@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>研习台 StudyDesk · 记忆 + 检索，让学习科研更高效</title>
+<style>
+  :root {
+    --blue: #1e5eff;
+    --blue-dark: #0d3bb8;
+    --ink: #1a2233;
+    --muted: #5a6b85;
+    --bg: #f6f8fc;
+    --card: #ffffff;
+    --line: #e3e9f2;
+    --code-bg: #0f172a;
+    --code-ink: #dbe7ff;
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.65; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  header { background: var(--blue-dark); color: #fff; }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; max-width: 1080px; margin: 0 auto; }
+  .nav b { font-size: 20px; letter-spacing: 1px; }
+  .nav a { color: #dfe8ff; text-decoration: none; font-size: 14px; margin-left: 18px; }
+
+  .hero { background: linear-gradient(135deg, #0d3bb8 0%, #1e5eff 60%, #3b82ff 100%); color: #fff; padding: 72px 0 96px; }
+  .hero h1 { font-size: 44px; letter-spacing: 2px; }
+  .hero p.sub { font-size: 20px; margin-top: 14px; opacity: .92; }
+  .hero p.meta { margin-top: 26px; font-size: 14px; opacity: .8; }
+  .hero .cta { margin-top: 30px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero .cta a { background: #fff; color: var(--blue-dark); padding: 11px 22px; border-radius: 999px; font-weight: 600; text-decoration: none; font-size: 15px; }
+  .hero .cta a.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.65); }
+
+  section { padding: 56px 0; }
+  section h2 { font-size: 28px; margin-bottom: 8px; }
+  section .lead { color: var(--muted); margin-bottom: 28px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .card h3 { font-size: 17px; margin-bottom: 10px; color: var(--blue-dark); }
+  .card p { font-size: 14.5px; color: var(--muted); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  .shot { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; }
+  .shot img { width: 100%; border-radius: 8px; display: block; }
+  .shot figcaption { font-size: 13px; color: var(--muted); padding: 10px 4px 4px; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); }
+  th, td { text-align: left; padding: 12px 16px; font-size: 14.5px; border-bottom: 1px solid var(--line); }
+  th { background: #eef3fc; color: var(--blue-dark); white-space: nowrap; }
+  td code { background: #eef3fc; color: var(--blue-dark); padding: 2px 8px; border-radius: 6px; font-size: 13px; }
+
+  pre { background: var(--code-bg); color: var(--code-ink); padding: 18px 20px; border-radius: 12px; overflow-x: auto; font-size: 13.5px; line-height: 1.55; }
+  pre .ok { color: #4ade80; font-weight: 700; }
+
+  .pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .pill { background: #eef3fc; color: var(--blue-dark); padding: 6px 14px; border-radius: 999px; font-size: 13.5px; font-weight: 600; }
+
+  .foot { border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--muted); font-size: 13.5px; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <b>研习台 StudyDesk</b>
+    <div><a href="#pain">问题</a><a href="#features">功能</a><a href="#tech">技术</a><a href="#proof">效果</a><a href="#run">体验</a></div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>研习台 StudyDesk</h1>
+    <p class="sub">记忆 + 检索，让学习、科研和工作更高效</p>
+    <p class="meta">2026 OceanBase 数据库大赛 · Qoder 赛题作品 · 用 Qoder 开发 · seekdb × PowerContext 驱动</p>
+    <div class="cta">
+      <a href="#run">立即体验（本地运行）</a>
+      <a class="ghost" href="https://github.com/oceanbase/powercontext/tree/2026-competition-ecosystem/qoder/studydesk" target="_blank">查看代码仓库</a>
+    </div>
+  </div>
+</div>
+
+<section id="pain">
+  <div class="wrap">
+    <h2>解决什么问题</h2>
+    <p class="lead">学习、科研与日常工作中，最浪费时间的是「重复找、反复问、拼拼凑凑」。</p>
+    <div class="cards">
+      <div class="card"><h3>📚 几十篇论文散落各处</h3><p>想找「某个结论在哪篇论文的哪一段」，只能一篇篇翻。研习台把论文、笔记、实验记录导入本地知识库，语义 + 关键词混合检索，直接返回段落和出处。</p></div>
+      <div class="card"><h3>🧠 忘了上周做到哪</h3><p>跨会话的进展、决策、约束、薄弱点总是丢失。研习台用 PowerContext 长期记忆记录，周报和复习清单自动从记忆 + 知识库组合生成。</p></div>
+      <div class="card"><h3>📝 周报总要一条条拼</h3><p>从聊天记录和笔记里拼周报很痛苦。研习台一条命令生成周报草稿：进展、决策、约束、薄弱点来自记忆，相关资料自动从知识库检索附上。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="background:#fff">
+  <div class="wrap">
+    <h2>核心功能</h2>
+    <p class="lead">CLI 与 Web 双入口，核心引擎由 Qoder 开发，seekdb 与 PowerContext 各司其职。</p>
+    <div class="grid2">
+      <div>
+        <table>
+          <tr><th>CLI 命令</th><th>作用</th></tr>
+          <tr><td><code>import &lt;file|dir&gt;</code></td><td>导入 .md/.txt 资料，分块向量化写入 seekdb 知识库</td></tr>
+          <tr><td><code>search &lt;查询词&gt;</code></td><td>语义检索，返回相关段落与来源</td></tr>
+          <tr><td><code>hybrid &lt;关键词&gt; &lt;查询词&gt;</code></td><td>全文 + 语义混合检索（RRF 融合）</td></tr>
+          <tr><td><code>record --kind &lt;k&gt; &lt;文本&gt;</code></td><td>写入长期记忆：status / decision / constraint / weakpoint</td></tr>
+          <tr><td><code>recall &lt;话题&gt;</code></td><td>从长期记忆召回相关内容</td></tr>
+          <tr><td><code>weekly</code> / <code>review</code></td><td>生成周报草稿 / 复习清单（记忆 + 资料组合）</td></tr>
+        </table>
+        <p style="margin-top:14px;font-size:14.5px;color:var(--muted)">Web 界面（端口 8787）提供同等的资料导入、混合检索、记录记忆、记忆召回四个交互模块，并带真实运行的后端健康检查。</p>
+      </div>
+      <div>
+        <figure class="shot">
+          <img src="screenshot-search.png" alt="研习台 Web 界面：实时检索结果" />
+          <figcaption>Web 界面实况：输入「向量数据库 索引」→ 命中知识库段落与来源</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tech">
+  <div class="wrap">
+    <h2>技术架构与结合</h2>
+    <p class="lead">本地向量化 + seekdb 混合检索 + PowerContext 长期记忆，无任何外部 API 依赖，数据全部保存在本地。</p>
+    <div class="cards">
+      <div class="card"><h3>seekdb（嵌入式）</h3><p>知识库的存储与混合检索：资料经本地向量化（bge-small-zh-v1.5，512 维）后写入，HNSW 向量索引 + ik 全文索引；<code>hybridSearch</code> 将全文与语义结果融合，检索结果直接用于资料问答与周报相关资料段落。</p></div>
+      <div class="card"><h3>PowerContext（HTTP API）</h3><p>长期记忆服务：进展 / 决策 / 约束 / 薄弱点以 atomic-memory 写入 scope，跨会话召回；周报与复习清单的数据来源。在 seekdb 引擎不可用时自动降级为资料存储，功能不中断。</p></div>
+      <div class="card"><h3>工程鲁棒性</h3><p>seekdb 为进程内原生插件，项目采用子进程探测 → 失败自愈（重建数据目录）→ 自动降级三层保障，保证任何环境下 `npm run demo` 都能一键跑通验证样例。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="proof" style="background:#fff">
+  <div class="wrap">
+    <h2>验证与效果</h2>
+    <p class="lead">内置验证样例 `npm run demo`（幂等可重跑），全部断言通过；以下为真实运行输出摘录。</p>
+<pre>=== 研习台 StudyDesk 验证样例 ===
+
+[知识库] 引擎：seekdb（嵌入式，本地向量 + ik 全文混合检索）
+PASS  知识库可读写 — 当前文档数 4
+PASS  检索命中相关资料 — top1: 向量数据库的索引结构：HNSW 通过多层跳表加速近邻搜索，查…
+PASS  混合检索（关键词+语义）非空 — 命中 4 条
+PASS  记忆写入成功 — artifact_id=art_705ca…
+PASS  记忆召回命中 — top: 【来源：考研数学复习笔记.md】考研数学复习：泰勒展开、拉格…
+PASS  周报生成包含进展与检索 — status=3, 检索 3 次
+<span class="ok">SCENARIO OK ✅（全部断言通过）</span></pre>
+    <p style="margin-top:12px;font-size:14.5px;color:var(--muted)">技术作用核对：检索命中、混合检索、计数均由 <b>seekdb</b> 实际提供；记忆写入、跨会话召回、周报数据来源由 <b>PowerContext</b> 实际提供（详见仓库 docs/验证记录.md 与 data/scenario-result.json）。</p>
+  </div>
+</section>
+
+<section id="run">
+  <div class="wrap">
+    <h2>体验入口</h2>
+    <p class="lead">项目为本地运行应用，3 条命令即可完整体验（完整步骤见仓库 docs/运行说明.md）。</p>
+    <div class="pills">
+      <span class="pill">Node.js ≥ 18</span><span class="pill">npm install</span><span class="pill">npm run demo-data</span><span class="pill">npm run demo</span><span class="pill">npm run web → http://localhost:8787</span>
+    </div>
+    <pre># 1. 安装依赖（自动下载 seekdb 绑定与本地向量模型）
+npm install
+
+# 2. 写入演示数据（8 条资料 + 5 条记忆，幂等）
+npm run demo-data
+
+# 3. 一键验证样例（6 项断言，seekdb / PowerContext 双技术证据）
+npm run demo
+
+# 4. 启动 Web 界面
+npm run web     # 打开 http://127.0.0.1:8787</pre>
+    <div class="grid2" style="margin-top:26px">
+      <figure class="shot">
+        <img src="screenshot-web.png" alt="研习台 Web 界面首页" />
+        <figcaption>Web 界面首页：资料导入 / 混合检索 / 记录记忆 / 记忆召回</figcaption>
+      </figure>
+      <div>
+        <table>
+          <tr><th>材料</th><th>位置</th></tr>
+          <tr><td>源码（含 Qoder 实现规格与开发记录）</td><td>仓库 <code>qoder/studydesk</code>（分支 2026-competition-ecosystem）</td></tr>
+          <tr><td>运行说明 / 验证记录 / 提交材料</td><td><code>docs/运行说明.md</code>、<code>docs/验证记录.md</code>、<code>docs/提交材料.md</code></td></tr>
+          <tr><td>Qoder 开发输入（Stage 1~4 规格）</td><td><code>docs/specs/stage1~4-*.md</code>、<code>test-stage1.mjs</code></td></tr>
+        </table>
+        <p style="margin-top:14px"><a href="https://github.com/oceanbase/powercontext/tree/2026-competition-ecosystem/qoder/studydesk" target="_blank" style="color:var(--blue-dark);font-weight:600">→ 前往代码仓库查看源码与文档</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="foot">
+  <div class="wrap">研习台 StudyDesk · 2026 OceanBase 数据库大赛 Qoder 赛题作品 · 用 Qoder 开发，seekdb × PowerContext 提供核心能力</div>
+</div>
+
+</body>
+</html>
