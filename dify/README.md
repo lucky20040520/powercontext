@@ -14,7 +14,7 @@
 |---|---|---|
 | 0 | `docs/方案设计.md` | （背景）人设、玩法、记忆格式与架构定稿，评审可先读此了解设计 |
 | 1 | `scripts/init_powercontext.sh` / `.ps1` | 启动 PowerContext Server（作品依赖的外部服务） |
-| 2 | `workflows/雾谷镇夜话_守夜人老钟.yml` | **唯一需要导入 Dify 的 DSL**：工作室 → 导入 DSL 即得完整应用 |
+| 2 | `workflows/雾谷镇夜话_守夜人老钟.yml`（与 `dify/雾谷镇夜话_守夜人老钟.yml` 为同一 DSL 的两个副本，内容一致，任选其一导入） | **需要导入 Dify 的 DSL**：工作室 → 导入 DSL 即得完整应用 |
 | 3 | （可选）`scripts/seed_demo_memory.py` | 预置"老钟记得旧事"的演示记忆，按提示选择执行 |
 | 4 | `docs/运行说明.md` | 从零复现：部署 → 导入 → 验证样例 → 故障排查（评审主文档） |
 | 5 | `docs/验证记录.md`、`docs/节点执行记录.md` | 运行证据：PowerContext 记忆闭环与 Dify HTTP 节点真实调用日志 |
