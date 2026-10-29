@@ -133,16 +133,20 @@ def _extract_page_text(page: PageObject) -> str:
     # pypdf's extractor silently treats some invalid /Contents values as blank.
     # An absent/null stream is blank; a present stream must actually be readable.
     contents = page.get("/Contents")
-    if contents is not None:
-        contents = contents.get_object()
-        if not isinstance(contents, NullObject):
-            streams = contents if isinstance(contents, ArrayObject) else (contents,)
-            for stream in streams:
-                resolved = stream.get_object()
-                if not isinstance(resolved, StreamObject):
-                    raise TypeError("PDF page contents must be streams")  # noqa: TRY003
-                _validate_compression(resolved)
-    return page.extract_text()
+    if contents is None:
+        return ""
+    contents = contents.get_object()
+    if isinstance(contents, NullObject):
+        return ""
+    streams = contents if isinstance(contents, ArrayObject) else (contents,)
+    for stream in streams:
+        resolved = stream.get_object()
+        if not isinstance(resolved, StreamObject):
+            raise TypeError("PDF page contents must be streams")  # noqa: TRY003
+        _validate_compression(resolved)
+    from powercontext.sources._pdf_text import select_page_text
+
+    return select_page_text(page)
 
 
 def _validate_compression(stream: StreamObject) -> None:

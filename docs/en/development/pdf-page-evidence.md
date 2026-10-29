@@ -11,6 +11,55 @@ Flate-encoded page streams are checked for complete compressed data before
 pypdf's best-effort decoder can silently recover a damaged stream. This also
 applies when Flate follows another encoding filter.
 
+Text extraction starts with pypdf's default mode. It measures text length,
+non-whitespace characters, abnormal short words, isolated letters and repeated
+text. Repeated line breaks next to abnormal short fragments also indicate risk,
+even when a table's numeric content dilutes their overall proportion. On sparse
+pages, supported CID positions and widths can independently confirm a split word
+before trying layout. A local abnormal short fragment beside a line break can
+also trigger this coordinate check without meeting a page-wide ratio. Geometry
+uses explicitly mapped ASCII or nonbreaking-space advances and preserves those
+Unicode word separators; annotation strings never decide whether to remove them.
+Improvements compare fragment counts over the conserved
+character inventory; a smaller word denominator cannot penalize successful joins.
+The candidate must preserve every non-whitespace character and avoid increased
+repeated-text risk. When complete horizontal Identity-H geometry is available,
+its numeric multiset certifies boundaries, including uniquely located whitespace
+splits. Otherwise existing multi-digit numeric anchors remain protected.
+If layout inserts a nearby footnote inside a number, the complete coordinate
+candidate may be used under the same conservation and improvement checks.
+Unsupported geometry disables this additional evidence, not extraction. Empty,
+incomplete or unverified candidates retain the default result. These guards do
+not establish perfect reading order or disambiguate every numeric fragment.
+
+For Identity-H fonts with NUL Unicode mappings, the parser can recover a character
+from the PDF's own single-glyph `ActualText` spans. Every occurrence of that code
+on the page must have the same explicit replacement; conflicting, uncovered,
+nested or unsupported spans are retained unchanged. Pages containing Forms are
+excluded from this repair, as are graphics-state font overrides. Alphabetic presentation ligatures expand to their
+Unicode letter sequences. Exact duplicate draws inside one text object are removed
+only when font dictionaries, position and text state match and the following
+position reset makes removal safe. Text at different positions, sizes or colors
+is preserved, including headers, footers and white text. No OCR or answer-based
+word reconstruction is performed.
+
+Consecutive spaces and tabs collapse to one space, preserving newlines without
+truncation. Extraction errors still fail the complete document.
+Existing persisted Sources and Memory entries
+are not rewritten, and their citations continue to identify the original versions.
+Submitting different text for an existing page identity in the same Scope raises
+an identity conflict. Reingest PDFs captured by an older extraction strategy into
+a new Scope to preserve the existing versions and citations.
+
+`scripts/pdf_fragment_experiment.py INPUT.pdf OUTPUT_DIR --pages 1 2` runs an
+isolated coordinate reconstruction experiment. It records character codes,
+original CID widths, positions, gaps, complete text and term-frequency differences
+for default, layout and coordinate candidates, including PDF `ActualText` recovery.
+It requires horizontal Identity-H fonts and rejects unsupported geometry and Forms.
+This experiment uses pypdf internal positioning helpers and is not a production
+extraction mode. It reads no reference answers; score comparisons belong in a
+separate offline evaluation step.
+
 ```python
 from powercontext.sources.pdf_pages import PDFDocumentInput, parse_pdf_document
 

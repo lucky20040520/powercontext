@@ -21,8 +21,8 @@ import sys
 from pathlib import Path
 
 import pytest
-from pypdf import PdfWriter
-from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import ArrayObject, DecodedStreamObject, DictionaryObject, NameObject, NumberObject
 
 from powercontext.builtin.artifacts.memory import MemoryEntryInput
 from powercontext.builtin.persistence.sqlite import SQLiteConfig
@@ -30,6 +30,7 @@ from powercontext.builtin.runtime import (
     BuiltinConfig,
     GetMemoryEntryRequest,
     RememberMemoryRequest,
+    SubmitSourceObservation,
     open_builtin_contexts,
     open_builtin_runtime,
 )
@@ -40,7 +41,13 @@ from powercontext.sources import (
     manifest_for_definition,
     project_source_for_transport,
 )
-from powercontext.sources.pdf_pages import PDF_PAGE_SOURCE_DEFINITION, PDFPageInput, search_pdf_pages
+from powercontext.sources.pdf_pages import (
+    PDF_PAGE_SOURCE_DEFINITION,
+    PDFDocumentInput,
+    PDFPageInput,
+    parse_pdf_document,
+    search_pdf_pages,
+)
 from powercontext.sources.projections import TEXT_EVIDENCE_PROJECTION_KEY
 
 _CAPTURE = """
@@ -235,6 +242,102 @@ def test_complete_long_page_remains_retrievable_after_restart(tmp_path: Path) ->
         async with open_builtin_runtime(config) as runtime:
             record = await runtime.memory.for_scope(scope_id).get(GetMemoryEntryRequest(citation=citations[0]))
             assert record.entry.text == expected
+
+    asyncio.run(run())
+
+
+def test_layout_padding_and_form_fallback_survive_persistence_and_restart(tmp_path: Path) -> None:
+    writer = PdfWriter()
+    fonts = DictionaryObject({
+        NameObject("/Font"): DictionaryObject({
+            NameObject("/F1"): DictionaryObject({
+                NameObject("/Type"): NameObject("/Font"),
+                NameObject("/Subtype"): NameObject("/Type1"),
+                NameObject("/BaseFont"): NameObject("/Helvetica"),
+            })
+        })
+    })
+    wide_contents = (
+        b"BT /F1 12 Tf "
+        + b" ".join(
+            f"1 0 0 1 50 {700 - row * 20} Tm (Revenue 2025 1234.56) Tj "
+            f"1 0 0 1 250050 {700 - row * 20} Tm (Net income 789) Tj".encode("ascii")
+            for row in range(5)
+        )
+        + b" ET"
+    )
+    for is_form, contents in (
+        (False, wide_contents),
+        (True, b"BT /F1 12 Tf 50 700 Td (Final debt maturity evidence 987654321) Tj ET"),
+    ):
+        page = writer.add_blank_page(width=400_000, height=792)
+        stream = DecodedStreamObject()
+        stream.set_data(contents)
+        if is_form:
+            stream.update({
+                NameObject("/Type"): NameObject("/XObject"),
+                NameObject("/Subtype"): NameObject("/Form"),
+                NameObject("/BBox"): ArrayObject([NumberObject(n) for n in (0, 0, 400_000, 792)]),
+                NameObject("/Resources"): fonts,
+            })
+            page[NameObject("/Resources")] = DictionaryObject({
+                NameObject("/XObject"): DictionaryObject({NameObject("/Report"): writer._add_object(stream)})
+            })
+            stream = DecodedStreamObject()
+            stream.set_data(b"q /Report Do Q")
+        else:
+            page[NameObject("/Resources")] = fonts
+        page[NameObject("/Contents")] = stream
+    writer.add_blank_page(width=612, height=792)
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    raw = buffer.getvalue()
+    reader = PdfReader(io.BytesIO(raw), strict=True)
+    assert len(reader.pages[0].extract_text(extraction_mode="layout").encode("utf-8")) > 32768
+    assert not reader.pages[1].extract_text(extraction_mode="layout").strip()
+    pages = parse_pdf_document(PDFDocumentInput(document_id="ACME_2025_10K", content=raw))
+    assert len(pages) == 3 and pages[2].text == ""
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'layout.db'}"))
+
+    async def run() -> None:
+        registry = SourceDefinitionRegistry((PDF_PAGE_SOURCE_DEFINITION,))
+        observations = [project_source_for_transport(registry, await registry.resolve(page)) for page in pages]
+        expected = {
+            source.name: f"{page.document_id}\n{page.text}".strip()
+            for source, page in zip(observations, pages, strict=True)
+        }
+        async with open_builtin_runtime(config, candidate_pipeline=_PagePipeline()) as runtime:
+            assert runtime.scopes is not None
+            scope = await runtime.scopes.create(ScopeDraft(title="Layout", summary="PDFs", idempotency_key="layout"))
+            await runtime.ingestion.register(manifest_for_definition(PDF_PAGE_SOURCE_DEFINITION))
+            for source in observations:
+                request = SubmitSourceObservation(scope_id=scope.scope_id, observation=source)
+                await runtime.ingestion.submit(request)
+                await runtime.ingestion.submit(request)
+            memory = runtime.memory.for_scope(scope.scope_id)
+            for _ in range(len(pages) + 1):
+                if not (await memory.flush()).processed:
+                    break
+            else:
+                raise AssertionError("PDF ingestion did not drain")  # noqa: TRY003
+
+        async with open_builtin_contexts(config) as contexts:
+            journal = await (await contexts.get(scope.scope_id)).sources.journal.entries()
+            assert len(journal) == len(pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope.scope_id)
+            snapshot = await memory.list()
+            assert {row.entry.sources[0].source_id: row.entry.text for row in snapshot.entries} == expected
+            citations = await search_pdf_pages(memory, "Revenue net income debt maturity 987654321", limit=20)
+            assert len(citations) == 2
+            for citation in citations:
+                record = await memory.get(GetMemoryEntryRequest(citation=citation))
+                assert record.entry.text == expected[record.entry.sources[0].source_id]
+        async with open_builtin_runtime(config) as runtime:
+            for citation in citations:
+                record = await runtime.memory.for_scope(scope.scope_id).get(GetMemoryEntryRequest(citation=citation))
+                assert record.citation == citation
+                assert record.entry.text == expected[record.entry.sources[0].source_id]
 
     asyncio.run(run())
 
