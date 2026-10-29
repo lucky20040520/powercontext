@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "name": "English eval set for all-MiniLM-L6-v2",
+    "lang": "en",
+    "docs": 24,
+    "queries": 10,
+    "note": "24 docs across 6 topics; each query labeled with 1~2 relevant doc ids."
+  },
+  "docs": [
+    { "id": "e001", "source": "database", "text": "Database indexes are data structures that speed up query execution. B-tree indexes support range scans while hash indexes excel at point lookups. Good index design reduces disk I/O dramatically." },
+    { "id": "e002", "source": "database", "text": "Transactions guarantee ACID properties: atomicity, consistency, isolation and durability. Concurrent control is implemented through locking and multiversion concurrency control." },
+    { "id": "e003", "source": "database", "text": "Query optimizers translate SQL into efficient execution plans using cost models. EXPLAIN helps developers analyze slow queries by showing index usage and join order." },
+    { "id": "e004", "source": "database", "text": "Vector databases store high-dimensional embeddings and perform approximate nearest neighbor search. They power semantic search and retrieval augmented generation applications." },
+    { "id": "e005", "source": "vector", "text": "HNSW builds a hierarchical navigable small world graph for fast approximate search. It navigates coarse layers first, then refines, visiting only a few nodes per query." },
+    { "id": "e006", "source": "vector", "text": "Hybrid search combines vector semantic search with keyword full-text search. Reciprocal rank fusion merges the two ranked lists into one final ordering." },
+    { "id": "e007", "source": "vector", "text": "Embedding models like Sentence-BERT and BGE encode text into dense vectors. all-MiniLM-L6-v2 is a compact English model that runs well on edge devices." },
+    { "id": "e008", "source": "vector", "text": "Vector index quantization such as product quantization compresses vectors to save memory. It trades a little accuracy for much higher throughput on large datasets." },
+    { "id": "e009", "source": "fulltext", "text": "Inverted indexes map each term to the documents that contain it, enabling fast keyword lookup. BM25 scores documents by term frequency, inverse document frequency and length normalization." },
+    { "id": "e010", "source": "fulltext", "text": "MySQL full-text search uses MATCH AGAINST with natural language or boolean modes. Boolean mode supports AND, OR and NOT operators for complex queries." },
+    { "id": "e011", "source": "fulltext", "text": "Search engines separate retrieval into recall and ranking stages. Recall gathers candidates from the inverted index while ranking re-scores them with heavier models." },
+    { "id": "e012", "source": "fulltext", "text": "Stop words like the, a, and of are filtered during indexing because they carry little retrieval value. Stemming reduces words to their roots to compress the index." },
+    { "id": "e013", "source": "ml", "text": "Machine learning learns patterns from data. Supervised learning needs labeled examples for classification and regression, while unsupervised learning discovers structure without labels." },
+    { "id": "e014", "source": "ml", "text": "Overfitting happens when a model memorizes training data but fails on new data. Regularization, dropout, data augmentation and early stopping improve generalization." },
+    { "id": "e015", "source": "ml", "text": "Gradient descent optimizes model parameters by stepping against the loss gradient. Minibatch gradient descent balances stability and speed between batch and stochastic variants." },
+    { "id": "e016", "source": "ml", "text": "Precision, recall and F1 are standard metrics for classification. They matter more than accuracy when classes are imbalanced." },
+    { "id": "e017", "source": "nn", "text": "Neural networks stack layers of neurons with weights and activation functions. Backpropagation computes parameter gradients and updates weights layer by layer." },
+    { "id": "e018", "source": "nn", "text": "The Transformer architecture relies on self-attention and processes sequences in parallel. Multi-head attention captures relationships from different representation subspaces." },
+    { "id": "e019", "source": "nn", "text": "Quantization converts floating point weights into low precision formats such as FP16 or INT8. Quantized models are smaller and faster, making them ideal for on-device inference." },
+    { "id": "e020", "source": "nn", "text": "Attention mechanisms let a model focus on the most relevant parts of the input when generating each output token." },
+    { "id": "e021", "source": "browser", "text": "WebAssembly is a low-level bytecode that runs in browsers at near-native speed. Combined with onnxruntime-web it enables neural network inference inside the browser." },
+    { "id": "e022", "source": "browser", "text": "WebGPU is the modern browser API for GPU computing. It gives web pages direct access to the graphics processor for high performance parallel workloads." },
+    { "id": "e023", "source": "browser", "text": "Service Workers intercept network requests and manage caches for offline apps. Combined with the Cache API they enable offline-first web applications." },
+    { "id": "e024", "source": "browser", "text": "On-device AI runs models directly on user hardware instead of uploading data to the cloud. It protects privacy, reduces latency, and works offline at the cost of local compute." }
+  ],
+  "queries": [
+    { "text": "how do database indexes speed up queries", "relevant": ["e001"] },
+    { "text": "what does ACID stand for in databases", "relevant": ["e002"] },
+    { "text": "how does vector database semantic search work", "relevant": ["e004", "e007"] },
+    { "text": "explain hybrid search with reciprocal rank fusion", "relevant": ["e006"] },
+    { "text": "what is an inverted index in full text search", "relevant": ["e009"] },
+    { "text": "how to solve model overfitting", "relevant": ["e014"] },
+    { "text": "why does quantization speed up inference", "relevant": ["e019"] },
+    { "text": "what is webassembly used for in browsers", "relevant": ["e021", "e024"] },
+    { "text": "what is webgpu used for", "relevant": ["e022"] },
+    { "text": "benefits of running ai models on device", "relevant": ["e024"] }
+  ]
+}

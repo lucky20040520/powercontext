@@ -1,0 +1,16 @@
+{
+  "name": "seekdb-kb-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "seekdb embedded backend for the on-device AI mini knowledge base",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "spike": "node spike-seekdb.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "seekdb": "1.4.0"
+  }
+}

@@ -1,0 +1,93 @@
+﻿【database】Database indexes are data structures that speed up query execution. B-tree indexes support range scans while hash indexes excel at point lookups. Good index design reduces disk I/O dramatically.
+
+---
+
+【database】Transactions guarantee ACID properties: atomicity, consistency, isolation and durability. Concurrent control is implemented through locking and multiversion concurrency control.
+
+---
+
+【database】Query optimizers translate SQL into efficient execution plans using cost models. EXPLAIN helps developers analyze slow queries by showing index usage and join order.
+
+---
+
+【database】Vector databases store high-dimensional embeddings and perform approximate nearest neighbor search. They power semantic search and retrieval augmented generation applications.
+
+---
+
+【vector】HNSW builds a hierarchical navigable small world graph for fast approximate search. It navigates coarse layers first, then refines, visiting only a few nodes per query.
+
+---
+
+【vector】Hybrid search combines vector semantic search with keyword full-text search. Reciprocal rank fusion merges the two ranked lists into one final ordering.
+
+---
+
+【vector】Embedding models like Sentence-BERT and BGE encode text into dense vectors. all-MiniLM-L6-v2 is a compact English model that runs well on edge devices.
+
+---
+
+【vector】Vector index quantization such as product quantization compresses vectors to save memory. It trades a little accuracy for much higher throughput on large datasets.
+
+---
+
+【fulltext】Inverted indexes map each term to the documents that contain it, enabling fast keyword lookup. BM25 scores documents by term frequency, inverse document frequency and length normalization.
+
+---
+
+【fulltext】MySQL full-text search uses MATCH AGAINST with natural language or boolean modes. Boolean mode supports AND, OR and NOT operators for complex queries.
+
+---
+
+【fulltext】Search engines separate retrieval into recall and ranking stages. Recall gathers candidates from the inverted index while ranking re-scores them with heavier models.
+
+---
+
+【fulltext】Stop words like the, a, and of are filtered during indexing because they carry little retrieval value. Stemming reduces words to their roots to compress the index.
+
+---
+
+【ml】Machine learning learns patterns from data. Supervised learning needs labeled examples for classification and regression, while unsupervised learning discovers structure without labels.
+
+---
+
+【ml】Overfitting happens when a model memorizes training data but fails on new data. Regularization, dropout, data augmentation and early stopping improve generalization.
+
+---
+
+【ml】Gradient descent optimizes model parameters by stepping against the loss gradient. Minibatch gradient descent balances stability and speed between batch and stochastic variants.
+
+---
+
+【ml】Precision, recall and F1 are standard metrics for classification. They matter more than accuracy when classes are imbalanced.
+
+---
+
+【nn】Neural networks stack layers of neurons with weights and activation functions. Backpropagation computes parameter gradients and updates weights layer by layer.
+
+---
+
+【nn】The Transformer architecture relies on self-attention and processes sequences in parallel. Multi-head attention captures relationships from different representation subspaces.
+
+---
+
+【nn】Quantization converts floating point weights into low precision formats such as FP16 or INT8. Quantized models are smaller and faster, making them ideal for on-device inference.
+
+---
+
+【nn】Attention mechanisms let a model focus on the most relevant parts of the input when generating each output token.
+
+---
+
+【browser】WebAssembly is a low-level bytecode that runs in browsers at near-native speed. Combined with onnxruntime-web it enables neural network inference inside the browser.
+
+---
+
+【browser】WebGPU is the modern browser API for GPU computing. It gives web pages direct access to the graphics processor for high performance parallel workloads.
+
+---
+
+【browser】Service Workers intercept network requests and manage caches for offline apps. Combined with the Cache API they enable offline-first web applications.
+
+---
+
+【browser】On-device AI runs models directly on user hardware instead of uploading data to the cloud. It protects privacy, reduces latency, and works offline at the cost of local compute.
