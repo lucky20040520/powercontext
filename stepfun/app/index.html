@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>本地知识库 · seekdb 混合检索</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">⚡</span>
+      <div>
+        <h1>本地知识库 · seekdb 混合检索</h1>
+        <p class="sub">浏览器本地向量化（Transformers.js）× seekdb 嵌入式混合检索 · 无云端推理 API</p>
+      </div>
+    </div>
+    <div class="badges">
+      <span id="badge-backend" class="badge badge-gray">后端：--</span>
+      <span id="badge-model" class="badge badge-gray">模型：--</span>
+      <span id="badge-docs" class="badge badge-gray">文档：0</span>
+      <span id="badge-engine" class="badge badge-gray">seekdb：--</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- 配置 -->
+    <section class="card" id="card-config">
+      <h2>① 模型与推理配置</h2>
+      <div class="row">
+        <label>模型
+          <select id="sel-model">
+            <option value="bge">bge-small-zh-v1.5（中文，512 维）</option>
+            <option value="mini">all-MiniLM-L6-v2（英文，384 维）</option>
+          </select>
+        </label>
+        <label>精度
+          <select id="sel-dtype">
+            <option value="fp32">FP32 基线</option>
+            <option value="fp16">FP16</option>
+            <option value="int8">INT8 (Q8)</option>
+          </select>
+        </label>
+        <label class="chk"><input type="checkbox" id="chk-force-wasm" /> 强制 WASM（模拟降级环境）</label>
+        <button id="btn-load" class="btn primary">加载模型</button>
+      </div>
+      <div id="load-status" class="status"></div>
+    </section>
+
+    <!-- 导入 -->
+    <section class="card" id="card-import">
+      <h2>② 导入语料（本地向量化 → 写入 seekdb）</h2>
+      <div class="row">
+        <button id="btn-sample" class="btn">导入示例语料（中文 72 篇）</button>
+        <button id="btn-sample-en" class="btn">导入示例语料（英文 24 篇）</button>
+        <label class="file"><input type="file" id="file-input" accept=".txt,.md,text/plain" multiple />选择 .txt / .md 文件</label>
+        <label>分块长度 <input type="number" id="chunk-size" value="180" min="40" max="2000" style="width:70px" /></label>
+        <label>批大小 <input type="number" id="batch-size" value="16" min="1" max="64" style="width:60px" /></label>
+      </div>
+      <textarea id="txt-paste" rows="5" placeholder="或直接粘贴文本，每行/每段将按分块策略切分…"></textarea>
+      <div class="row">
+        <button id="btn-import" class="btn primary">开始导入</button>
+        <span id="import-status" class="status"></span>
+      </div>
+      <div id="import-progress-wrap" class="progress-wrap hidden">
+        <div id="import-progress" class="progress"><span></span></div>
+        <span id="import-progress-text" class="progress-text"></span>
+      </div>
+    </section>
+
+    <!-- 检索 -->
+    <section class="card" id="card-search">
+      <h2>③ 混合检索（seekdb 内完成向量 + 全文融合）</h2>
+      <div class="row">
+        <input id="inp-query" type="text" placeholder="输入查询，例如：数据库索引是怎么实现的？" style="flex:1" />
+        <label>模式
+          <select id="sel-mode">
+            <option value="hybrid">混合检索（向量+全文 RRF）</option>
+            <option value="vector">纯向量</option>
+          </select>
+        </label>
+        <label>Top-K <input type="number" id="inp-topk" value="8" min="1" max="20" style="width:60px" /></label>
+        <button id="btn-search" class="btn primary">搜索</button>
+      </div>
+      <div id="search-status" class="status"></div>
+      <div id="results" class="results"></div>
+    </section>
+
+    <!-- 评测 -->
+    <section class="card" id="card-eval">
+      <h2>④ 评测：检索质量 + 分阶段性能（真实浏览器运行）</h2>
+      <div class="row">
+        <label>重复次数 <input type="number" id="eval-repeats" value="3" min="1" max="10" style="width:60px" /></label>
+        <label>Top-K <input type="number" id="eval-topk" value="5" min="1" max="20" style="width:60px" /></label>
+        <button id="btn-eval" class="btn primary">运行评测（当前模型/精度/后端）</button>
+        <button id="btn-eval-all" class="btn">一键评测全矩阵（fp32/fp16/int8 × WebGPU/WASM）</button>
+      </div>
+      <div id="eval-status" class="status"></div>
+      <div id="eval-out"></div>
+      <div class="row">
+        <button id="btn-export-log" class="btn">导出本次评测原始数据（JSON）</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <button id="btn-reset" class="btn danger small">清空知识库（删除 docs 集合并重建）</button>
+    <span id="foot-info"></span>
+  </footer>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,2526 @@
+{
+  "app": "seekdb-kb",
+  "generatedAt": "2026-10-28T15:45:09.499Z",
+  "runs": [
+    {
+      "config": {
+        "model": "mini",
+        "variant": "fp32",
+        "device": "webgpu"
+      },
+      "model": {
+        "id": "all-MiniLM-L6-v2",
+        "dim": 384,
+        "label": "all-MiniLM-L6-v2"
+      },
+      "loaded": {
+        "loadMs": 1210.9000000059605,
+        "warmupMs": 194.5,
+        "dim": 384
+      },
+      "ingest": {
+        "docs": 24,
+        "embedMs": 168,
+        "throughput": 142.5,
+        "addMsTotal": 259,
+        "refreshMsTotal": 412
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.9,
+          "ndcg": 0.7886852807234541
+        },
+        "vector": {
+          "recall": 0.9,
+          "ndcg": 0.9226294385530917
+        },
+        "perQuery": [
+          {
+            "query": "how do database indexes speed up queries",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what does ACID stand for in databases",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how does vector database semantic search work",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "explain hybrid search with reciprocal rank fusion",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is an inverted index in full text search",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how to solve model overfitting",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "why does quantization speed up inference",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.5
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is webassembly used for in browsers",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "what is webgpu used for",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "benefits of running ai models on device",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 16.9,
+        "queryEmbedMsMedian": 9.4,
+        "dbMsMedian": 4.2
+      },
+      "ts": "2026-10-28T15:20:28.146Z"
+    },
+    {
+      "config": {
+        "model": "mini",
+        "variant": "fp16",
+        "device": "webgpu"
+      },
+      "model": {
+        "id": "all-MiniLM-L6-v2",
+        "dim": 384,
+        "label": "all-MiniLM-L6-v2"
+      },
+      "loaded": {
+        "loadMs": 395.09999999403954,
+        "warmupMs": 520.8000000119209,
+        "dim": 384
+      },
+      "ingest": {
+        "docs": 24,
+        "embedMs": 512,
+        "throughput": 46.9,
+        "addMsTotal": 135,
+        "refreshMsTotal": 402
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.9,
+          "ndcg": 0.7886852807234541
+        },
+        "vector": {
+          "recall": 0.9,
+          "ndcg": 0.9226294385530917
+        },
+        "perQuery": [
+          {
+            "query": "how do database indexes speed up queries",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what does ACID stand for in databases",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how does vector database semantic search work",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "explain hybrid search with reciprocal rank fusion",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is an inverted index in full text search",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how to solve model overfitting",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "why does quantization speed up inference",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.5
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is webassembly used for in browsers",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "what is webgpu used for",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "benefits of running ai models on device",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 22,
+        "queryEmbedMsMedian": 12.7,
+        "dbMsMedian": 5.2
+      },
+      "ts": "2026-10-28T15:20:57.803Z"
+    },
+    {
+      "config": {
+        "model": "mini",
+        "variant": "int8",
+        "device": "webgpu"
+      },
+      "model": {
+        "id": "all-MiniLM-L6-v2",
+        "dim": 384,
+        "label": "all-MiniLM-L6-v2"
+      },
+      "loaded": {
+        "loadMs": 298.19999998807907,
+        "warmupMs": 138.40000000596046,
+        "dim": 384
+      },
+      "ingest": {
+        "docs": 24,
+        "embedMs": 702,
+        "throughput": 34.2,
+        "addMsTotal": 143,
+        "refreshMsTotal": 402
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.8,
+          "ndcg": 0.7226294385530917
+        },
+        "vector": {
+          "recall": 0.05,
+          "ndcg": 0.03868528072345416
+        },
+        "perQuery": [
+          {
+            "query": "how do database indexes speed up queries",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "what does ACID stand for in databases",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.5
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "how does vector database semantic search work",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.38685280723454163
+            }
+          },
+          {
+            "query": "explain hybrid search with reciprocal rank fusion",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "what is an inverted index in full text search",
+            "hybrid": {
+              "recall": 0,
+              "ndcg": 0
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "how to solve model overfitting",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "why does quantization speed up inference",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.5
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "what is webassembly used for in browsers",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "what is webgpu used for",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "benefits of running ai models on device",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 109.6,
+        "queryEmbedMsMedian": 101.8,
+        "dbMsMedian": 4.5
+      },
+      "ts": "2026-10-28T15:21:23.224Z"
+    },
+    {
+      "config": {
+        "model": "mini",
+        "variant": "fp32",
+        "device": "wasm"
+      },
+      "model": {
+        "id": "all-MiniLM-L6-v2",
+        "dim": 384,
+        "label": "all-MiniLM-L6-v2"
+      },
+      "loaded": {
+        "loadMs": 206.59999999403954,
+        "warmupMs": 22.599999994039536,
+        "dim": 384
+      },
+      "ingest": {
+        "docs": 24,
+        "embedMs": 766,
+        "throughput": 31.3,
+        "addMsTotal": 255,
+        "refreshMsTotal": 313
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.9,
+          "ndcg": 0.7886852807234541
+        },
+        "vector": {
+          "recall": 0.9,
+          "ndcg": 0.9226294385530917
+        },
+        "perQuery": [
+          {
+            "query": "how do database indexes speed up queries",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what does ACID stand for in databases",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how does vector database semantic search work",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "explain hybrid search with reciprocal rank fusion",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is an inverted index in full text search",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how to solve model overfitting",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "why does quantization speed up inference",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.5
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is webassembly used for in browsers",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "what is webgpu used for",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "benefits of running ai models on device",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 15.5,
+        "queryEmbedMsMedian": 8.4,
+        "dbMsMedian": 4.3
+      },
+      "ts": "2026-10-28T15:22:05.169Z"
+    },
+    {
+      "config": {
+        "model": "mini",
+        "variant": "fp16",
+        "device": "wasm"
+      },
+      "model": {
+        "id": "all-MiniLM-L6-v2",
+        "dim": 384,
+        "label": "all-MiniLM-L6-v2"
+      },
+      "loaded": {
+        "loadMs": 213.69999998807907,
+        "warmupMs": 32.60000002384186,
+        "dim": 384
+      },
+      "ingest": {
+        "docs": 24,
+        "embedMs": 857,
+        "throughput": 28,
+        "addMsTotal": 272,
+        "refreshMsTotal": 413
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.9,
+          "ndcg": 0.7886852807234541
+        },
+        "vector": {
+          "recall": 0.9,
+          "ndcg": 0.9226294385530917
+        },
+        "perQuery": [
+          {
+            "query": "how do database indexes speed up queries",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what does ACID stand for in databases",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how does vector database semantic search work",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "explain hybrid search with reciprocal rank fusion",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is an inverted index in full text search",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how to solve model overfitting",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "why does quantization speed up inference",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.5
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is webassembly used for in browsers",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "what is webgpu used for",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "benefits of running ai models on device",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 32.8,
+        "queryEmbedMsMedian": 25.8,
+        "dbMsMedian": 4.3
+      },
+      "ts": "2026-10-28T15:24:17.592Z"
+    },
+    {
+      "config": {
+        "model": "mini",
+        "variant": "int8",
+        "device": "wasm"
+      },
+      "model": {
+        "id": "all-MiniLM-L6-v2",
+        "dim": 384,
+        "label": "all-MiniLM-L6-v2"
+      },
+      "loaded": {
+        "loadMs": 111.69999998807907,
+        "warmupMs": 7.800000011920929,
+        "dim": 384
+      },
+      "ingest": {
+        "docs": 24,
+        "embedMs": 483,
+        "throughput": 49.7,
+        "addMsTotal": 283,
+        "refreshMsTotal": 413
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.9,
+          "ndcg": 0.7817529365307935
+        },
+        "vector": {
+          "recall": 0.9,
+          "ndcg": 0.9226294385530917
+        },
+        "perQuery": [
+          {
+            "query": "how do database indexes speed up queries",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what does ACID stand for in databases",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how does vector database semantic search work",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "explain hybrid search with reciprocal rank fusion",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is an inverted index in full text search",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "how to solve model overfitting",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "why does quantization speed up inference",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.43067655807339306
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "what is webassembly used for in browsers",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "what is webgpu used for",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "benefits of running ai models on device",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 14.4,
+        "queryEmbedMsMedian": 7.3,
+        "dbMsMedian": 4.3
+      },
+      "ts": "2026-10-28T15:26:47.374Z"
+    },
+    {
+      "config": {
+        "model": "bge",
+        "variant": "fp32",
+        "device": "webgpu"
+      },
+      "model": {
+        "id": "bge-small-zh-v1.5",
+        "dim": 512,
+        "label": "bge-small-zh-v1.5"
+      },
+      "loaded": {
+        "loadMs": 390.39999997615814,
+        "warmupMs": 29.700000017881393,
+        "dim": 512
+      },
+      "ingest": {
+        "docs": 72,
+        "embedMs": 844,
+        "throughput": 85.4,
+        "addMsTotal": 636,
+        "refreshMsTotal": 213
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.95,
+          "ndcg": 0.9283500899584588
+        },
+        "vector": {
+          "recall": 0.825,
+          "ndcg": 0.8103509700868965
+        },
+        "perQuery": [
+          {
+            "query": "数据库索引是怎么工作的，为什么能加快查询",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "事务的 ACID 特性包括哪些",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "向量数据库是什么，如何做语义检索",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "HNSW 索引的检索原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "混合检索如何融合向量和关键词结果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8503449055347546
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "BM25 相关性评分是怎么计算的",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "中文全文检索需要分词吗",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "什么是倒排索引",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "机器学习过拟合怎么解决",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Transformer 自注意力机制原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "模型量化为什么能加速推理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            }
+          },
+          {
+            "query": "Python 的 GIL 对多线程有什么影响",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "WebGPU 在浏览器里能做什么",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.6934264036172708
+            }
+          },
+          {
+            "query": "在浏览器本地运行 AI 模型有什么好处",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.6934264036172708
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "个人知识库怎么做语义搜索",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "RAG 检索增强生成是怎么工作的",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "文档分块粒度如何影响检索效果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Docker 容器和虚拟机有什么区别",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "哈希表如何解决冲突",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "最大堆和优先队列的关系",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 19.2,
+        "queryEmbedMsMedian": 9.3,
+        "dbMsMedian": 6.3
+      },
+      "ts": "2026-10-28T15:29:18.383Z"
+    },
+    {
+      "config": {
+        "model": "bge",
+        "variant": "fp16",
+        "device": "webgpu"
+      },
+      "model": {
+        "id": "bge-small-zh-v1.5",
+        "dim": 512,
+        "label": "bge-small-zh-v1.5"
+      },
+      "loaded": {
+        "loadMs": 397.5,
+        "warmupMs": 117,
+        "dim": 512
+      },
+      "ingest": {
+        "docs": 72,
+        "embedMs": 766,
+        "throughput": 94,
+        "addMsTotal": 503,
+        "refreshMsTotal": 303
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.925,
+          "ndcg": 0.9130214101393225
+        },
+        "vector": {
+          "recall": 0.825,
+          "ndcg": 0.8082256963963896
+        },
+        "perQuery": [
+          {
+            "query": "数据库索引是怎么工作的，为什么能加快查询",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "事务的 ACID 特性包括哪些",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "向量数据库是什么，如何做语义检索",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "HNSW 索引的检索原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "混合检索如何融合向量和关键词结果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8503449055347546
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "BM25 相关性评分是怎么计算的",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "中文全文检索需要分词吗",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "什么是倒排索引",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "机器学习过拟合怎么解决",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Transformer 自注意力机制原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "模型量化为什么能加速推理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            }
+          },
+          {
+            "query": "Python 的 GIL 对多线程有什么影响",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "WebGPU 在浏览器里能做什么",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.6509209298071326
+            }
+          },
+          {
+            "query": "在浏览器本地运行 AI 模型有什么好处",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.38685280723454163
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "个人知识库怎么做语义搜索",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "RAG 检索增强生成是怎么工作的",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "文档分块粒度如何影响检索效果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Docker 容器和虚拟机有什么区别",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "哈希表如何解决冲突",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "最大堆和优先队列的关系",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 17.4,
+        "queryEmbedMsMedian": 8.4,
+        "dbMsMedian": 6.1
+      },
+      "ts": "2026-10-28T15:29:30.957Z"
+    },
+    {
+      "config": {
+        "model": "bge",
+        "variant": "int8",
+        "device": "webgpu"
+      },
+      "model": {
+        "id": "bge-small-zh-v1.5",
+        "dim": 512,
+        "label": "bge-small-zh-v1.5"
+      },
+      "loaded": {
+        "loadMs": 261.2999999821186,
+        "warmupMs": 78.10000002384186,
+        "dim": 512
+      },
+      "ingest": {
+        "docs": 72,
+        "embedMs": 3611,
+        "throughput": 19.9,
+        "addMsTotal": 831,
+        "refreshMsTotal": 213
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.925,
+          "ndcg": 0.8918974577654695
+        },
+        "vector": {
+          "recall": 0.125,
+          "ndcg": 0.10164339909568229
+        },
+        "perQuery": [
+          {
+            "query": "数据库索引是怎么工作的，为什么能加快查询",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "事务的 ACID 特性包括哪些",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "向量数据库是什么，如何做语义检索",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "HNSW 索引的检索原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.6309297535714575
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "混合检索如何融合向量和关键词结果",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "BM25 相关性评分是怎么计算的",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "中文全文检索需要分词吗",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "什么是倒排索引",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "机器学习过拟合怎么解决",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "Transformer 自注意力机制原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "模型量化为什么能加速推理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "Python 的 GIL 对多线程有什么影响",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.5
+            }
+          },
+          {
+            "query": "WebGPU 在浏览器里能做什么",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "在浏览器本地运行 AI 模型有什么好处",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.5706417189553201
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "个人知识库怎么做语义搜索",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            }
+          },
+          {
+            "query": "RAG 检索增强生成是怎么工作的",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "文档分块粒度如何影响检索效果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "Docker 容器和虚拟机有什么区别",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "哈希表如何解决冲突",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "最大堆和优先队列的关系",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 85.9,
+        "queryEmbedMsMedian": 76.5,
+        "dbMsMedian": 6.8
+      },
+      "ts": "2026-10-28T15:31:55.601Z"
+    },
+    {
+      "config": {
+        "model": "bge",
+        "variant": "fp32",
+        "device": "wasm"
+      },
+      "model": {
+        "id": "bge-small-zh-v1.5",
+        "dim": 512,
+        "label": "bge-small-zh-v1.5"
+      },
+      "loaded": {
+        "loadMs": 207.19999998807907,
+        "warmupMs": 6.9000000059604645,
+        "dim": 512
+      },
+      "ingest": {
+        "docs": 72,
+        "embedMs": 5283,
+        "throughput": 13.6,
+        "addMsTotal": 653,
+        "refreshMsTotal": 312
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.95,
+          "ndcg": 0.9283500899584588
+        },
+        "vector": {
+          "recall": 0.825,
+          "ndcg": 0.8103509700868965
+        },
+        "perQuery": [
+          {
+            "query": "数据库索引是怎么工作的，为什么能加快查询",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "事务的 ACID 特性包括哪些",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "向量数据库是什么，如何做语义检索",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "HNSW 索引的检索原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "混合检索如何融合向量和关键词结果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8503449055347546
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "BM25 相关性评分是怎么计算的",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "中文全文检索需要分词吗",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "什么是倒排索引",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "机器学习过拟合怎么解决",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Transformer 自注意力机制原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "模型量化为什么能加速推理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            }
+          },
+          {
+            "query": "Python 的 GIL 对多线程有什么影响",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "WebGPU 在浏览器里能做什么",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.6934264036172708
+            }
+          },
+          {
+            "query": "在浏览器本地运行 AI 模型有什么好处",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.6934264036172708
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "个人知识库怎么做语义搜索",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "RAG 检索增强生成是怎么工作的",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "文档分块粒度如何影响检索效果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Docker 容器和虚拟机有什么区别",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "哈希表如何解决冲突",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "最大堆和优先队列的关系",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 26.4,
+        "queryEmbedMsMedian": 17.6,
+        "dbMsMedian": 6
+      },
+      "ts": "2026-10-28T15:36:22.838Z"
+    },
+    {
+      "config": {
+        "model": "bge",
+        "variant": "fp16",
+        "device": "wasm"
+      },
+      "model": {
+        "id": "bge-small-zh-v1.5",
+        "dim": 512,
+        "label": "bge-small-zh-v1.5"
+      },
+      "loaded": {
+        "loadMs": 139.2999999821186,
+        "warmupMs": 27.599999994039536,
+        "dim": 512
+      },
+      "ingest": {
+        "docs": 72,
+        "embedMs": 5648,
+        "throughput": 12.7,
+        "addMsTotal": 666,
+        "refreshMsTotal": 241
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.95,
+          "ndcg": 0.9283500899584588
+        },
+        "vector": {
+          "recall": 0.825,
+          "ndcg": 0.8103509700868965
+        },
+        "perQuery": [
+          {
+            "query": "数据库索引是怎么工作的，为什么能加快查询",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "事务的 ACID 特性包括哪些",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "向量数据库是什么，如何做语义检索",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "HNSW 索引的检索原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "混合检索如何融合向量和关键词结果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8503449055347546
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "BM25 相关性评分是怎么计算的",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "中文全文检索需要分词吗",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "什么是倒排索引",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "机器学习过拟合怎么解决",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Transformer 自注意力机制原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "模型量化为什么能加速推理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            }
+          },
+          {
+            "query": "Python 的 GIL 对多线程有什么影响",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "WebGPU 在浏览器里能做什么",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.6934264036172708
+            }
+          },
+          {
+            "query": "在浏览器本地运行 AI 模型有什么好处",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.6934264036172708
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "个人知识库怎么做语义搜索",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "RAG 检索增强生成是怎么工作的",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "文档分块粒度如何影响检索效果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Docker 容器和虚拟机有什么区别",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "哈希表如何解决冲突",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "最大堆和优先队列的关系",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 47,
+        "queryEmbedMsMedian": 38.1,
+        "dbMsMedian": 6.2
+      },
+      "ts": "2026-10-28T15:40:54.327Z"
+    },
+    {
+      "config": {
+        "model": "bge",
+        "variant": "int8",
+        "device": "wasm"
+      },
+      "model": {
+        "id": "bge-small-zh-v1.5",
+        "dim": 512,
+        "label": "bge-small-zh-v1.5"
+      },
+      "loaded": {
+        "loadMs": 89.80000001192093,
+        "warmupMs": 8,
+        "dim": 512
+      },
+      "ingest": {
+        "docs": 72,
+        "embedMs": 3172,
+        "throughput": 22.7,
+        "addMsTotal": 669,
+        "refreshMsTotal": 316
+      },
+      "quality": {
+        "topk": 5,
+        "hybrid": {
+          "recall": 0.95,
+          "ndcg": 0.9283500899584588
+        },
+        "vector": {
+          "recall": 0.825,
+          "ndcg": 0.8103509700868965
+        },
+        "perQuery": [
+          {
+            "query": "数据库索引是怎么工作的，为什么能加快查询",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            }
+          },
+          {
+            "query": "事务的 ACID 特性包括哪些",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "向量数据库是什么，如何做语义检索",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "HNSW 索引的检索原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "混合检索如何融合向量和关键词结果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.8503449055347546
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.8772153153380493
+            }
+          },
+          {
+            "query": "BM25 相关性评分是怎么计算的",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "中文全文检索需要分词吗",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "什么是倒排索引",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "机器学习过拟合怎么解决",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Transformer 自注意力机制原理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "模型量化为什么能加速推理",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.9197207891481876
+            }
+          },
+          {
+            "query": "Python 的 GIL 对多线程有什么影响",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "WebGPU 在浏览器里能做什么",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 0.6509209298071326
+            }
+          },
+          {
+            "query": "在浏览器本地运行 AI 模型有什么好处",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 0.6934264036172708
+            },
+            "vector": {
+              "recall": 0,
+              "ndcg": 0
+            }
+          },
+          {
+            "query": "个人知识库怎么做语义搜索",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "RAG 检索增强生成是怎么工作的",
+            "hybrid": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            },
+            "vector": {
+              "recall": 0.5,
+              "ndcg": 0.6131471927654584
+            }
+          },
+          {
+            "query": "文档分块粒度如何影响检索效果",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "Docker 容器和虚拟机有什么区别",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "哈希表如何解决冲突",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          },
+          {
+            "query": "最大堆和优先队列的关系",
+            "hybrid": {
+              "recall": 1,
+              "ndcg": 1
+            },
+            "vector": {
+              "recall": 1,
+              "ndcg": 1
+            }
+          }
+        ]
+      },
+      "perf": {
+        "repeats": 3,
+        "hotQueries": 3,
+        "e2eMsMedian": 22.3,
+        "queryEmbedMsMedian": 13.2,
+        "dbMsMedian": 6.3
+      },
+      "ts": "2026-10-28T15:43:02.271Z"
+    }
+  ]
+}
