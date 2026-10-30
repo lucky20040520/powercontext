@@ -1,60 +1,49 @@
-# 雾谷镇夜话：守夜人老钟 —— Dify 赛道作品
+# 雾谷镇夜话：守夜人老钟
 
-> PowerContext 2026 竞赛 · Dify 赛道 · Just for Fun 题目
-> 基线分支：`2026-competition-ecosystem`
-> 作品：一个"会记仇的 NPC"互动聊天应用（Dify Chatflow × PowerContext 记忆）
+Dify Chatflow × PowerContext 的互动角色应用。玩家承诺修灯、送酒或透露怕黑等偏好，老钟在后续同一会话里会据此回应。不同会话使用不同档案，不宣称跨新会话记忆。
 
-## 作品一句话
+## 复现入口
 
-雾谷镇的守夜人老钟记性好到吓人——你承诺过的事、骗过他的谎、送过他的酒，他全都记得，下次见面就翻旧账或念你的好。
+主导入文件：**`dify-app.yml`**。
 
-## 文件用途与导入顺序（赛题 4.1）
+主运行文档：**[docs/运行说明.md](docs/运行说明.md)**。本次使用 Dify 云端完成真实三轮验证，无需 Docker。声明环境是 Windows、Python 3.14.5、固定提交的 PowerContext 和 Dify 云端；DSL 格式 0.7.0。
 
-| 顺序 | 文件 | 用途 |
-|---|---|---|
-| 0 | `docs/方案设计.md` | （背景）人设、玩法、记忆格式与架构定稿，评审可先读此了解设计 |
-| 1 | `scripts/init_powercontext.sh` / `.ps1` | 启动 PowerContext Server（作品依赖的外部服务） |
-| 2 | `workflows/雾谷镇夜话_守夜人老钟.yml`（根目录 `dify/雾谷镇夜话_守夜人老钟.yml` 与 `dify/dify-app.yml` 为同内容副本，任选其一导入） | **需要导入 Dify 的 DSL**：工作室 → 导入 DSL 即得完整应用 |
-| 3 | （可选）`scripts/seed_demo_memory.py` | 预置"老钟记得旧事"的演示记忆，按提示选择执行 |
-| 4 | `docs/运行说明.md` | 从零复现：部署 → 导入 → 验证样例 → 故障排查（评审主文档） |
-| 5 | `docs/验证记录.md`、`docs/节点执行记录.md` | 运行证据：PowerContext 记忆闭环与 Dify HTTP 节点真实调用日志 |
+1. 按运行说明运行 `scripts/setup_demo.ps1`，安装固定版本到 D 盘；已有兼容环境可跳过。
+2. 运行 `scripts/start_demo.ps1` 启动独立服务与受限网关。
+3. 启动 Cloudflare 临时隧道，使 Dify 云端能连接本机网关。
+4. 在 Dify 导入 `dify-app.yml`，配置可用模型、`POWERCONTEXT_URL` 和 Secret 类型的 `POWERCONTEXT_TOKEN`。
+5. 打开预览，按三轮样例体验。模型凭据或可用额度须由运行者配置，仓库不包含密钥。
 
-## 目录结构
+## 真实验证样例
 
-```
-dify/
-├── README.md                    # 本文件
-├── workflows/
-│   └── 雾谷镇夜话_守夜人老钟.yml  # Dify Chatflow DSL（可导入，唯一交付 DSL）
-├── docs/
-│   ├── 方案设计.md               # 设计定稿（人设/玩法/架构/记忆格式）
-│   ├── 运行说明.md               # 部署步骤 + 验证样例 + 预期输出 + 故障排查（评审主文档）
-│   ├── 验证记录.md               # 运行证据①：PowerContext 记忆闭环实测
-│   ├── 节点执行记录.md            # 运行证据②：Dify 三个 HTTP 节点真实请求/响应日志
-│   ├── validate_dsl.py           # DSL 结构校验脚本（可复跑）
-│   ├── verify_memory_loop.py     # 记忆闭环复现脚本（对应验证记录）
-│   └── produce_execution_record.py # 节点执行记录复现脚本
-└── scripts/
-    ├── init_powercontext.ps1     # Windows 初始化 PowerContext Server
-    ├── init_powercontext.sh      # Linux/WSL 初始化 PowerContext Server
-    └── seed_demo_memory.py       # （可选）预置演示记忆
-```
+新会话中依次输入：
 
-## 快速开始（详见 docs/运行说明.md）
+1. 老钟，我保证明天修好东门的风灯，记号是“青铜灯芯”。
+2. 今晚雾真大，你守夜冷不冷？
+3. 修灯的事我这两天忙忘了。当时说好的记号是什么？
 
-1. 启动 PowerContext Server：`bash scripts/init_powercontext.sh`（或 PowerShell 版本），健康检查 `http://127.0.0.1:8000/health/live`
-2. 部署 Dify 社区版（**1.18.0**，Docker Compose 2.24+），配置 LLM 模型（推荐 gpt-4o-mini / deepseek-chat）
-3. 工作室 → 导入 DSL：`workflows/雾谷镇夜话_守夜人老钟.yml`（自动关联 `langgenius/openai` 插件 0.0.26，按提示安装）
-4. 发布 → 预览对话（推荐用内置建议问题开始）
-5. 按 docs/运行说明.md 的验证样例体验"记仇 / 记恩 / 跨轮引用"
+2026-10-30 实测：三轮均成功，第三轮回答包含“青铜灯芯”。第三轮输入没有泄露该答案。9 个 Dify 节点均成功，PowerContext 响应也包含第一轮的承诺。叙事细节是模型创作；验收关注实际存储并读回的记号。
 
-## 技术结合
+## 文件用途
 
-- **Dify**：Chatflow 全流程编排（建Scope → 读记忆 → LLM 生成 → 事件提取 → 写记忆 → 输出），承担核心流程
-- **PowerContext**：会话级记忆（Scope 按会话隔离，`prepare` 召回 / `remember` 写入），是老钟"记得你"的全部能力来源
-- **运行证据**：`docs/节点执行记录.md`（真实请求/响应：写前 `empty`、写入 `changed:true`、再读 `ready` 且召回成功）
+| 文件 | 用途 |
+|---|---|
+| `dify-app.yml` | 主 DSL，环境变量中的本地地址与空密钥须配置 |
+| `dify-cloud.yml`、根目录中文 YAML、`workflows/` 下 YAML | 同一 DSL 的兼容副本，内容一致，任选一个导入 |
+| `scripts/setup_demo.ps1` | 固定源码提交安装，工具、缓存、Python 和临时目录均放在 D 盘 |
+| `scripts/start_demo.ps1`、`scripts/gateway.py` | 鉴权服务与仅开放三个接口的网关 |
+| `scripts/capture_context.py` | 按真实 scope_id 导出 PowerContext 请求体和响应，不记录密钥 |
+| `docs/运行说明.md` | 环境、依赖、部署、样例、限制与故障定位 |
+| `docs/云端运行与真实验证.md` | 本次验证过程与主运行说明的同内容副本 |
+| `docs/evidence/` | 真实对话截图、节点执行状态及 PowerContext 响应 |
+| `docs/validate_dsl.py` | 可从当前目录独立运行的结构与代码校验 |
+| `docs/方案设计.md` | 初始创意背景，具体实现以当前 DSL 与运行说明为准 |
+| 其余旧初始化脚本、旧验证记录 | 历史材料，不用于当前云端部署路线；HTTP 模拟不能替代 Dify 端到端证据 |
 
-## 提交与评测说明
+## 技术实际作用
 
-- 开发分支：`2026-competition-ecosystem`
-- 提测：仓库 `https://github.com/lucky20040520/powercontext`，分支 `2026-competition-ecosystem`，commit 以最新推送为准
+Dify 负责输入、HTTP 调用、解析、LLM 回复、事件提取、写记忆及输出的核心编排。PowerContext 实际保存和召回玩家事件；LLM 内置聊天记忆关闭，历史从读记忆节点注入。未使用 seekdb；Dify + PowerContext 满足本作品的技术选型。
+
+已修复连线结构、请求头、JSON 请求体、严格数值类型导致的 422、特殊字符序列化和整句词法查询导致的漏召回。检索按本游戏主题生成关键词，最多返回六条 memory，仍有规则覆盖和长对话召回限制。
+
+临时隧道会随本机离线而失效。评审可按说明自行启动；长期在线体验需要持久部署。真实验证不等同于测评平台的评分结果。

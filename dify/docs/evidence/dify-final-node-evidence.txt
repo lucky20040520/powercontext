@@ -1,0 +1,147 @@
+- link "跳转到主要内容":
+  - /url: "#main-content"
+- navigation "工作室":
+  - list:
+    - link "主页":
+      - /url: /
+    - listitem: /
+    - link "工作室":
+      - /url: /apps
+- button "搜索任何内容"
+- button "收起侧边栏"
+- generic: 🏮
+- generic "雾谷镇夜话：守夜人老钟"
+- button "雾谷镇夜话：守夜人老钟 的更多操作"
+- generic: Chatflow
+- navigation "雾谷镇夜话：守夜人老钟":
+  - link "编排":
+    - /url: /app/d31b0259-5dcd-401c-b0cf-35e2a9823ede/workflow
+    - generic: 编排
+  - link "访问入口":
+    - /url: /app/d31b0259-5dcd-401c-b0cf-35e2a9823ede/access-point
+    - generic: 访问入口
+  - separator
+  - link "日志":
+    - /url: /app/d31b0259-5dcd-401c-b0cf-35e2a9823ede/logs
+    - generic: 日志
+  - link "标注":
+    - /url: /app/d31b0259-5dcd-401c-b0cf-35e2a9823ede/annotations
+    - generic: 标注
+  - separator
+  - link "监测":
+    - /url: /app/d31b0259-5dcd-401c-b0cf-35e2a9823ede/overview
+    - generic: 监测
+- button "Dify 账户":
+  - generic: D
+  - generic "Dify"
+  - generic: 账户
+- button "打开帮助菜单"
+- main:
+  - button "添加节点"
+  - button "添加注释"
+  - separator
+  - button "指针模式" [pressed]
+  - button "手模式"
+  - separator
+  - button "整理节点"
+  - button "导出图片"
+  - button "撤销" [disabled]
+  - button "重做" [disabled]
+  - separator
+  - button "变更历史"
+  - button "查看缓存"
+  - button "清除"
+  - img "React Flow mini map"
+  - button "缩小"
+  - button "33%"
+  - button "放大"
+  - status "工作流保存状态":
+    - generic: 自动保存
+    - time: 10:20:48
+    - generic: ·
+    - generic: 未发布
+  - button "预览": 预览
+  - button "查看运行历史"
+  - button "检查清单":
+    - generic: 检查清单
+  - button "会话变量"
+  - button "环境变量"
+  - button "系统变量"
+  - button "功能": 功能
+  - button "发布": 发布
+  - button "版本历史"
+  - separator "预览"
+  - generic: 预览
+  - button "重新开始"
+  - button "关闭"
+  - paragraph: 老钟，我保证明天修好东门的风灯，记号是“青铜灯芯”。
+  - button "工作流运行成功 输出老钟的回复":
+    - img "工作流运行成功"
+    - generic: 输出老钟的回复
+  - paragraph:
+    - text: （慢悠悠掏出怀表，铜壳上刻着歪斜的“雾谷东门”四字）
+    - text: 恁这记号……倒比灯芯还亮堂。
+    - text: （用拇指蹭了蹭灯罩边缘的锈斑）
+    - text: 明儿卯时我拎壶热茶蹲这儿，若见灯亮，赏你半块桂花糕——若不亮……（眯眼笑）咱就数数这三十七年里，多少人把“明天”熬成了雾。
+  - paragraph: 今晚雾真大，你守夜冷不冷？
+  - button "工作流运行成功 输出老钟的回复":
+    - img "工作流运行成功"
+    - generic: 输出老钟的回复
+  - paragraph:
+    - text: （用袖口抹了抹风灯玻璃，火苗在雾里晃出毛茸茸的光晕）
+    - text: 恁这话说得……倒像我真怕冷似的。三十七年东门风灯，霜打过、雪埋过，连雾气都认得我这把老骨头。（从怀里摸出个粗陶酒壶，壶嘴朝你微微一倾）
+    - text: 要不？自酿的黍酒，暖身子——可甭指望我多给，一盏灯亮着，人就得醒着。
+  - paragraph: 修灯的事我这两天忙忘了。当时说好的记号是什么？
+  - button "日志":
+  - button "复制"
+  - button "重新生成"
+  - button "工作流运行成功 工作流" [expanded] [active]:
+    - img "工作流运行成功"
+    - generic: 工作流
+  - button "开始 0.085 ms 成功":
+    - generic: 开始
+    - generic: 0.085 ms
+    - generic: 成功
+  - button "建Scope 1.792 s 成功":
+    - generic: 建Scope
+    - generic: 1.792 s
+    - generic: 成功
+  - button "解析Scope 76.388 ms 成功":
+    - generic: 解析Scope
+    - generic: 76.388 ms
+    - generic: 成功
+  - button "读记忆 447.217 ms 成功":
+    - generic: 读记忆
+    - generic: 447.217 ms
+    - generic: 成功
+  - button "解析记忆 77.141 ms 成功":
+    - generic: 解析记忆
+    - generic: 77.141 ms
+    - generic: 成功
+  - button "老钟回复 629 tokens · 3.417 s 成功":
+    - generic: 老钟回复
+    - generic: 629 tokens · 3.417 s
+    - generic: 成功
+  - button "事件提取 78.663 ms 成功":
+    - generic: 事件提取
+    - generic: 78.663 ms
+    - generic: 成功
+  - button "写记忆 399.909 ms 成功":
+    - generic: 写记忆
+    - generic: 399.909 ms
+    - generic: 成功
+  - button "输出老钟的回复 0.083 ms 成功":
+    - generic: 输出老钟的回复
+    - generic: 0.083 ms
+    - generic: 成功
+  - paragraph:
+    - text: （慢悠悠擦着铜灯罩，头也不抬）
+    - text: 恁倒记得问记号……青铜灯芯，刻在灯座底下第三道螺纹里。
+    - text: （忽然停手，从怀里摸出半截锈蚀的铜片，在雾气里晃了晃）
+    - text: 喏，昨儿扫地时捡的——灯芯断了，风一吹就打颤。
+    - text: （把铜片往你手心一塞，袖口露出道旧烫疤）
+    - text: 忙？忙得过东门这雾？它可不等人。
+  - textbox "和 Bot 聊天"
+  - button "发送" [disabled]
+  - button "开启功能增强 web app 用户体验":
+    - generic: 开启功能增强 web app 用户体验
