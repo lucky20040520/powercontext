@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>研习台 StudyDesk · 记忆 + 检索，让学习科研更高效</title>
+<style>
+  :root {
+    --brand: #2563eb; --brand-dark: #1d4ed8; --bg: #f1f5f9; --card: #ffffff;
+    --text: #1e293b; --muted: #64748b; --border: #e2e8f0; --ok: #16a34a; --warn: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: var(--bg); color: var(--text); }
+  header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff; padding: 28px 24px; }
+  header h1 { font-size: 26px; }
+  header p { opacity: .9; margin-top: 6px; font-size: 14px; }
+  main { max-width: 980px; margin: 24px auto; padding: 0 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .card h2 { font-size: 16px; margin-bottom: 10px; color: var(--brand-dark); }
+  textarea, input, select { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+  textarea { min-height: 64px; resize: vertical; }
+  .row { display: flex; gap: 8px; margin-top: 8px; }
+  .row > * { flex: 1; }
+  button { background: var(--brand); color: #fff; border: 0; border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; }
+  button:hover { background: var(--brand-dark); }
+  button.secondary { background: #e2e8f0; color: var(--text); }
+  .out { margin-top: 10px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px; max-height: 320px; overflow: auto; }
+  .out.empty { color: var(--muted); }
+  .badge { display: inline-block; font-size: 12px; border-radius: 999px; padding: 2px 10px; margin-right: 6px; background: #e0e7ff; color: var(--brand-dark); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  footer { max-width: 980px; margin: 8px auto 24px; padding: 0 16px; font-size: 12px; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); margin-right: 4px; }
+  .status-dot.ok { background: var(--ok); }
+  .full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>研习台 StudyDesk</h1>
+  <p>seekdb 知识库混合检索 + PowerContext 长期记忆 —— 资料找得到、进度忘不了、周报不用拼</p>
+</header>
+
+<main>
+  <div class="card">
+    <h2>① 资料导入（→ seekdb 知识库）</h2>
+    <textarea id="importText" placeholder="粘贴一段笔记 / 论文摘要 / 实验记录…"></textarea>
+    <div class="row">
+      <input id="importSource" placeholder="来源（如 论文A.md）">
+      <button onclick="doImport()">导入知识库</button>
+    </div>
+    <div id="importOut" class="out empty">等待导入…</div>
+  </div>
+
+  <div class="card">
+    <h2>② 混合检索（seekdb 语义 + 全文）</h2>
+    <div class="row">
+      <select id="searchMode">
+        <option value="semantic">语义检索</option>
+        <option value="hybrid">混合检索（全文+语义）</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <input id="searchQuery" placeholder="查询内容，如：数据库的索引结构">
+    </div>
+    <div class="row">
+      <input id="searchKeyword" placeholder="混合检索关键词（可选，如：向量）">
+      <button onclick="doSearch()">检索</button>
+    </div>
+    <div id="searchOut" class="out empty">等待检索…</div>
+  </div>
+
+  <div class="card">
+    <h2>③ 记录记忆（→ PowerContext）</h2>
+    <div class="row">
+      <select id="recordKind">
+        <option value="status">进展 status</option>
+        <option value="decision">决策 decision</option>
+        <option value="constraint">约束 constraint</option>
+        <option value="weakpoint">薄弱点 weakpoint</option>
+      </select>
+    </div>
+    <textarea id="recordText" style="margin-top:8px" placeholder="本周完成了… / 决定采用… / 周报需要包含… / 还没吃透…"></textarea>
+    <div class="row">
+      <button onclick="doRecord()">写入记忆</button>
+      <button class="secondary" onclick="loadMemories()">查看全部记忆</button>
+    </div>
+    <div id="recordOut" class="out empty">等待操作…</div>
+  </div>
+
+  <div class="card">
+    <h2>④ 记忆召回（PowerContext 跨会话）</h2>
+    <div class="row">
+      <input id="recallQuery" placeholder="话题，如：数学复习 进度">
+      <button onclick="doRecall()">召回</button>
+    </div>
+    <div id="recallOut" class="out empty">等待召回…</div>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 周报生成（记忆 + 检索 组合）</h2>
+    <p class="hint">自动召回记忆并检索相关资料，生成周报草稿，不用再翻聊天记录拼。</p>
+    <div class="row">
+      <button onclick="doWeekly()">生成周报</button>
+      <button class="secondary" onclick="doReview()">生成复习清单</button>
+    </div>
+    <div id="weeklyOut" class="out empty">等待生成…</div>
+  </div>
+
+  <div class="card">
+    <h2>⑥ 系统状态</h2>
+    <div id="healthOut" class="out empty">检测中…</div>
+  </div>
+</main>
+
+<footer>
+  <span><span id="dot" class="status-dot"></span><span id="healthText">检测服务状态…</span></span>
+  <span>知识库文档数：<b id="docCount">-</b></span>
+  <span>研习台 StudyDesk · 数据保存在本地</span>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? "POST" : "GET",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+function show(el, text, isError) {
+  el.textContent = text;
+  el.className = "out" + (text && !isError ? "" : " empty");
+  if (isError) el.style.color = "#dc2626";
+  else el.style.color = "";
+}
+
+async function refreshHealth() {
+  try {
+    const h = await api("/api/health");
+    $("dot").className = "status-dot" + (h.ok ? " ok" : "");
+    $("healthText").textContent = h.ok ? `服务正常（seekdb ✓ PowerContext ✓）` : `部分异常（seekdb ${h.seekdb ? "✓" : "✗"} / PowerContext ${h.powercontext ? "✓" : "✗"}）`;
+    $("healthOut").textContent = JSON.stringify(h, null, 2);
+    const c = await api("/api/count");
+    $("docCount").textContent = c.docs;
+  } catch (e) {
+    $("dot").className = "status-dot";
+    $("healthText").textContent = "服务异常：" + e.message;
+  }
+}
+
+async function doImport() {
+  const text = $("importText").value.trim();
+  if (!text) return show($("importOut"), "请输入要导入的内容");
+  try {
+    const r = await api("/api/import", { text, source: $("importSource").value.trim() || "web" });
+    show($("importOut"), `已导入 ${r.imported} 条资料`);
+    $("importText").value = "";
+    refreshHealth();
+  } catch (e) { show($("importOut"), "导入失败：" + e.message, true); }
+}
+
+async function doSearch() {
+  const query = $("searchQuery").value.trim();
+  if (!query) return show($("searchOut"), "请输入查询内容");
+  try {
+    const mode = $("searchMode").value;
+    const r = await api("/api/search", { query, mode, keyword: $("searchKeyword").value.trim() || undefined });
+    const out = r.results.length
+      ? r.results.map((x, i) => `[${i + 1}] 来源 ${x.meta?.source || "未知"}\n${x.text}`).join("\n\n")
+      : "没有检索到相关内容";
+    show($("searchOut"), out);
+  } catch (e) { show($("searchOut"), "检索失败：" + e.message, true); }
+}
+
+async function doRecord() {
+  const kind = $("recordKind").value;
+  const text = $("recordText").value.trim();
+  if (!text) return show($("recordOut"), "请输入记忆内容");
+  try {
+    const r = await api("/api/record", { kind, text });
+    show($("recordOut"), `已写入记忆（${kind}）\nartifact_id=${r.artifact_id} revision=${r.revision}`);
+    $("recordText").value = "";
+  } catch (e) { show($("recordOut"), "写入失败：" + e.message, true); }
+}
+
+async function loadMemories() {
+  try {
+    const r = await api("/api/memories");
+    const out = r.items.length
+      ? r.items.map((it) => `[${it.kind}] ${it.text}`).join("\n\n")
+      : "暂无记忆";
+    show($("recordOut"), out);
+  } catch (e) { show($("recordOut"), "读取失败：" + e.message, true); }
+}
+
+async function doRecall() {
+  const query = $("recallQuery").value.trim();
+  if (!query) return show($("recallOut"), "请输入话题");
+  try {
+    const r = await api("/api/recall", { query });
+    const out = r.hits.length
+      ? r.hits.map((h) => `[${h.memory.kind}] ${h.memory.text}`).join("\n\n")
+      : "没有召回相关记忆";
+    show($("recallOut"), out);
+  } catch (e) { show($("recallOut"), "召回失败：" + e.message, true); }
+}
+
+async function doWeekly() {
+  try {
+    show($("weeklyOut"), "生成中…（需要召回记忆并检索资料）");
+    const r = await api("/api/weekly");
+    show($("weeklyOut"), r.report);
+  } catch (e) { show($("weeklyOut"), "生成失败：" + e.message, true); }
+}
+
+async function doReview() {
+  try {
+    show($("weeklyOut"), "生成中…");
+    const r = await api("/api/review");
+    show($("weeklyOut"), r.report);
+  } catch (e) { show($("weeklyOut"), "生成失败：" + e.message, true); }
+}
+
+refreshHealth();
+</script>
+</body>
+</html>

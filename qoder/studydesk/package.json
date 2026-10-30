@@ -1,0 +1,22 @@
+{
+  "name": "studydesk",
+  "version": "1.0.0",
+  "description": "研习台 StudyDesk —— 学习/科研/工作提效助手：seekdb 知识库混合检索 + PowerContext 长期记忆",
+  "type": "module",
+  "main": "src/cli.js",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "web": "node src/web/server.js",
+    "demo-data": "node scripts/setup-demo-data.mjs",
+    "demo": "node scripts/scenario-demo.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
+    "express": "^4.21.2",
+    "seekdb": "1.4.0"
+  }
+}
