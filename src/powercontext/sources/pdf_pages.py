@@ -142,7 +142,36 @@ def _extract_page_text(page: PageObject) -> str:
                 if not isinstance(resolved, StreamObject):
                     raise TypeError("PDF page contents must be streams")  # noqa: TRY003
                 _validate_compression(resolved)
+    _validate_form_streams(page, set())
     return page.extract_text()
+
+
+def _validate_form_streams(container: object, seen: set[int]) -> None:
+    """Validate nested text-bearing forms that the extractor may silently skip."""
+
+    from pypdf.generic import DictionaryObject, StreamObject
+
+    if not isinstance(container, DictionaryObject) or id(container) in seen:
+        return
+    seen.add(id(container))
+    resources = container.get("/Resources")
+    if resources is None:
+        return
+    resources = resources.get_object()
+    if not isinstance(resources, DictionaryObject):
+        raise TypeError("PDF resources must be a dictionary")  # noqa: TRY003
+    objects = resources.get("/XObject")
+    if objects is None:
+        return
+    objects = objects.get_object()
+    if not isinstance(objects, DictionaryObject):
+        raise TypeError("PDF XObjects must be a dictionary")  # noqa: TRY003
+    for reference in objects.values():
+        form = reference.get_object()
+        # Image payloads do not contribute extractable text and are outside OCR.
+        if isinstance(form, StreamObject) and form.get("/Subtype") == "/Form":
+            _validate_compression(form)
+            _validate_form_streams(form, seen)
 
 
 def _validate_compression(stream: StreamObject) -> None:

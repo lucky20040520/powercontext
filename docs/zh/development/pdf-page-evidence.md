@@ -6,6 +6,8 @@
 整体以 `ValueError` 失败。扫描图像不进行 OCR。
 Flate 编码的页内容会在 pypdf 尝试容错恢复之前检查压缩数据完整性，避免把损坏流当作成功解析。
 Flate 位于其他编码之后的过滤链也会执行该校验。
+嵌套 Form XObject 的文本流执行相同校验，防止损坏的表格或正文被提取器静默跳过。
+资源遍历记录已访问的对象，避免循环引用导致无限递归；图像内容不参与文本流校验。
 
 ```python
 from powercontext.sources.pdf_pages import PDFDocumentInput, parse_pdf_document

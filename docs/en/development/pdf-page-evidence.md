@@ -10,6 +10,9 @@ scanned pages.
 Flate-encoded page streams are checked for complete compressed data before
 pypdf's best-effort decoder can silently recover a damaged stream. This also
 applies when Flate follows another encoding filter.
+Nested Form XObject text streams receive the same checks, so damaged table or
+body text cannot be silently skipped. Resource traversal tracks visited objects
+to handle cycles; image payloads are outside the text validation path.
 
 ```python
 from powercontext.sources.pdf_pages import PDFDocumentInput, parse_pdf_document

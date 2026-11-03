@@ -21,7 +21,7 @@ import io
 import zlib
 
 import pytest
-from pypdf import PdfWriter
+from pypdf import PdfReader, PdfWriter
 from pypdf.generic import ArrayObject, DecodedStreamObject, DictionaryObject, NameObject, NumberObject
 
 from powercontext.sources import SourceDefinitionRegistry, SourceMaterialization, TextEvidence
@@ -193,3 +193,39 @@ def test_chained_filters_preserve_complete_text_and_reject_corruption() -> None:
 def test_indirect_compression_filter_is_a_readable_pdf() -> None:
     pages = parse_pdf_document(PDFDocumentInput(document_id="indirect-filter", content=_document(indirect_filter=True)))
     assert len(pages) == 2 and "Revenue 2025 1,234.56" in pages[0].text
+
+
+def test_nested_form_text_is_complete_and_corruption_fails_atomically() -> None:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    page = writer.pages[0]
+    original = page.get_contents().get_data()
+    form = DecodedStreamObject()
+    form.set_data(original)
+    form = form.flate_encode()
+    form[NameObject("/Subtype")] = NameObject("/Form")
+    form[NameObject("/Resources")] = page["/Resources"]
+    form[NameObject("/BBox")] = ArrayObject([NumberObject(n) for n in (0, 0, 612, 792)])
+    nested = DecodedStreamObject()
+    nested.set_data(b"/TextForm Do")
+    nested[NameObject("/Subtype")] = NameObject("/Form")
+    nested[NameObject("/BBox")] = form["/BBox"]
+    nested[NameObject("/Resources")] = DictionaryObject({
+        NameObject("/XObject"): DictionaryObject({NameObject("/TextForm"): writer._add_object(form)})
+    })
+    page[NameObject("/Resources")] = DictionaryObject({
+        NameObject("/XObject"): DictionaryObject({NameObject("/Nested"): writer._add_object(nested)})
+    })
+    contents = DecodedStreamObject()
+    contents.set_data(b"/Nested Do")
+    page[NameObject("/Contents")] = contents
+    output = io.BytesIO()
+    writer.write(output)
+    raw = output.getvalue()
+    pages = parse_pdf_document(PDFDocumentInput(document_id="nested-form", content=raw))
+    assert len(pages) == 2 and "Revenue 2025 1,234.56" in pages[0].text
+    encoded = zlib.compress(original)
+    assert encoded in raw
+    damaged = raw.replace(encoded, encoded[:-4] + b"\x00\x00\x00\x00", 1)
+    with pytest.raises(ValueError):
+        parse_pdf_document(PDFDocumentInput(document_id="nested-form", content=damaged))
