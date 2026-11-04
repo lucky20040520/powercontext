@@ -23,6 +23,8 @@ from powercontext.builtin.code.polyglot import PolyglotExtractor, grammar_key
 
 
 def run(manifest_path: Path) -> None:
+    if sys.platform == "win32":
+        raise CodeError("unsupported_code_platform")
     import resource
 
     job = json.loads(manifest_path.read_bytes())

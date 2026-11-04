@@ -1190,7 +1190,7 @@ SOURCE_LIFECYCLE_NODES_TABLE = Table(
     Column("available", Boolean, nullable=False),
     Column("payload", _canonical_payload_type(), nullable=False),
     UniqueConstraint("scope_id", "binding_key", name="uq_pc_source_lifecycle_binding"),
-    Index("ix_pc_source_lifecycle_topic", "scope_id", "topic_artifact_id", "available"),
+    Index("ix_pc_source_lifecycle_topic", "scope_id", "topic_artifact_id"),
 )
 
 BUILTIN_TABLES = (

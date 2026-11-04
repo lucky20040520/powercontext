@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 import threading
 import time
 import uuid
@@ -243,6 +244,8 @@ class SeekDBGraphStore:
     def create(
         self, directory: Path, nodes: list[dict[str, Any]], edges: list[dict[str, Any]], deadline: float
     ) -> dict[str, Any]:
+        if sys.platform == "win32":
+            raise CodeError("unsupported_code_platform")
         self.initialize(deadline)
         reference = {"backend": self.identity, "binding": directory.parent.name, "id": uuid.uuid4().hex}
         # Persist the cleanup handle before any database commit can leave orphan rows.

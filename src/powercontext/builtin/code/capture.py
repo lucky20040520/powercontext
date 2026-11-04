@@ -19,6 +19,7 @@ import os
 import selectors
 import stat
 import subprocess
+import sys
 import time
 from dataclasses import asdict, dataclass, field
 from functools import lru_cache
@@ -239,6 +240,8 @@ def _excluded(path: str, config: CodeRepositoryConfig) -> str | None:
 
 def _read_relative(root_fd: int, path: str, limit: int, deadline: float) -> tuple[bytes | None, str | None, int, str]:
     """Open each component relative to a trusted directory descriptor."""
+    if sys.platform == "win32":
+        raise CodeError("unsupported_code_platform")
     descriptors: list[int] = []
     current = root_fd
     try:
@@ -294,6 +297,8 @@ def capture_repository(
     content_dir: Path | None = None,
 ) -> Capture:
     """Capture or verify an inventory, including actual unstaged worktree content."""
+    if sys.platform == "win32":
+        raise CodeError("unsupported_code_platform")
     try:
         root = config.root.resolve(strict=True)
         root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)

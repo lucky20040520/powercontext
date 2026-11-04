@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -1051,6 +1052,8 @@ def test_malformed_parser_progress_reports_parser_failure(repository, monkeypatc
 
 
 def test_fifo_cache_corruption_fails_without_blocking(repository):
+    if sys.platform == "win32":
+        pytest.skip("FIFO files require a POSIX platform")
     _, service = repository
     directory = next(service.config.cache_dir.iterdir())
     pointer = directory / "current.json"

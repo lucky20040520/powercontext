@@ -182,6 +182,8 @@ extra-paths = [
 
 [tool.ty.src]
 exclude = [
+    # Organizer-owned acceptance assets use competition/requirements.txt.
+    "competition",
     # Optional Jupyter dependencies and notebook state are validated by notebooks-test.
     "examples/jupyter",
     "e2e/bub",
@@ -221,6 +223,8 @@ markers = [
 target-version = "py311"
 line-length = 120
 fix = true
+# Keep organizer-owned assets byte-for-byte; their acceptance suite is separate.
+extend-exclude = ["competition"]
 
 [tool.ruff.lint]
 select = [

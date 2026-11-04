@@ -25,6 +25,8 @@ import socket
 import subprocess
 import tempfile
 import time
+import urllib.request
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,13 +34,17 @@ from shutil import which
 from typing import cast
 from urllib.error import URLError
 from urllib.parse import urlparse
-from urllib.request import url2pathname, urlopen
+from urllib.request import urlopen
 from uuid import uuid4
 
 from powercontext.cli.git_source import InvalidGitHubSourceError, clone_github_source, github_clone_url
 from powercontext.cli.git_source import is_local_source as _is_local_source
 from powercontext.cli.system import Diagnostic, DiagnosticStatus, SetupError
 from powercontext.paths import powercontext_data_dir
+
+# urllib.request's public API remains supported. ty 0.0.56 propagates the
+# Windows nturl2path implementation's deprecation onto this public alias.
+url2pathname: Callable[[str], str] = getattr(urllib.request, "url2pathname")  # noqa: B009
 
 OPENCODE_PLUGIN_NAME = "powercontext-opencode"
 OPENCODE_PLUGIN_RELATIVE = Path("integrations") / "opencode" / "plugins" / "powercontext"

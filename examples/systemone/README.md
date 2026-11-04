@@ -6,6 +6,10 @@ The integration has two parts: PowerContext retrieves the relevant context; a sm
 
 The runnable experiment makes this concrete. The same generation model writes an amount-conversion function twice, with and without recalled project rules. Jev, optionally alongside Laya, reviews both implementations against the recalled rules. Independent tests execute the generated code, and the observed results become Memory for the next session.
 
+The generated-code verifier requires Linux or macOS with POSIX `resource` limits.
+On Windows it saves the proposed source for inspection and reports that execution
+is unavailable, without launching a child or dropping the resource limits.
+
 ## Architecture
 
 The example separates context, generation, advisory decisions, and verification:

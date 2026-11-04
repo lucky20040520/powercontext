@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 from pathlib import Path
 from typing import Any
 
@@ -38,7 +39,10 @@ def cents(text: str) -> int:
         raise ValueError("invalid amount") from error
 """
 
+_POSIX_EXECUTION = pytest.mark.skipif(os.name != "posix", reason="verification requires POSIX resource limits")
 
+
+@_POSIX_EXECUTION
 def test_actual_decimal_results_and_saved_source(tmp_path: Path) -> None:
     result = asyncio.run(verify_code(_VALID, tmp_path))
 
@@ -52,6 +56,7 @@ def test_actual_decimal_results_and_saved_source(tmp_path: Path) -> None:
     assert checks["NaN"]["actual"] == "ValueError"
 
 
+@_POSIX_EXECUTION
 def test_float_baseline_reports_real_rounding_and_validation_failures(tmp_path: Path) -> None:
     code = "def cents(text: str) -> int:\n    return round(float(text) * 100)\n"
     result = asyncio.run(verify_code(code, tmp_path))
@@ -65,6 +70,7 @@ def test_float_baseline_reports_real_rounding_and_validation_failures(tmp_path: 
     assert checks["Infinity"]["actual"] == "OverflowError"
 
 
+@_POSIX_EXECUTION
 def test_broad_exception_handler_preserves_real_generated_amount_results(tmp_path: Path) -> None:
     code = """\
 from decimal import Decimal, ROUND_HALF_UP
@@ -85,6 +91,7 @@ def cents(text: str) -> int:
     assert (tmp_path / "amount.py").read_text() == code
 
 
+@_POSIX_EXECUTION
 def test_encoding_comments_cannot_change_the_validated_program(tmp_path: Path) -> None:
     code = '# coding: utf-7\n# +AAo-raise RuntimeError("encoding switched")+AAo-\n' + _VALID
     result = asyncio.run(verify_code(code, tmp_path))
@@ -122,6 +129,7 @@ def test_unsupported_programs_are_saved_without_execution(code: str, tmp_path: P
     assert (tmp_path / "amount.py").read_text() == code
 
 
+@_POSIX_EXECUTION
 def test_accepted_but_broken_function_reports_execution_failure(tmp_path: Path) -> None:
     code = "def cents(text: str) -> int:\n    return 1 // 0\n"
     result = asyncio.run(verify_code(code, tmp_path))
@@ -132,6 +140,7 @@ def test_accepted_but_broken_function_reports_execution_failure(tmp_path: Path) 
     assert all(item["actual"] == "ZeroDivisionError" for item in result["checks"])
 
 
+@_POSIX_EXECUTION
 def test_cancelled_verification_reaps_the_real_child(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     original_spawn = asyncio.create_subprocess_exec
     children: list[asyncio.subprocess.Process] = []
@@ -155,3 +164,13 @@ def test_cancelled_verification_reaps_the_real_child(tmp_path: Path, monkeypatch
     asyncio.run(scenario())
     assert children
     assert all(child.returncode is not None for child in children)
+
+
+@pytest.mark.skipif(os.name == "posix", reason="unsupported-platform rejection is exercised on Windows")
+def test_verification_rejects_unsupported_platform_before_execution(tmp_path: Path) -> None:
+    result = asyncio.run(verify_code(_VALID, tmp_path))
+
+    assert result["passed"] == 0 and result["checks"] == []
+    assert result["pid"] == 0 and result["exit_code"] is None
+    assert "requires POSIX resource limits" in result["error"]
+    assert (tmp_path / "amount.py").read_text(encoding="utf-8") == _VALID

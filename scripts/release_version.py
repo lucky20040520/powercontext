@@ -113,9 +113,9 @@ def main() -> int:
         return 2
 
     for path, content in updates.items():
-        relative_path = path.relative_to(ROOT)
+        relative_path = path.relative_to(ROOT).as_posix()
         if args.write:
-            path.write_text(content, encoding="utf-8")
+            path.write_text(content, encoding="utf-8", newline="\n")
             print(f"Updated {relative_path}")
         else:
             print(f"Release version mismatch: {relative_path} (expected {version})", file=sys.stderr)

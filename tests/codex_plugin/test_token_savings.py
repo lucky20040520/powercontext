@@ -722,7 +722,8 @@ def test_stop_process_exits_within_the_host_deadline_against_a_slow_server(tmp_p
                 f"settings._MCP_CONFIGURATION_PATH = Path({str(config)!r})",
                 "from hooks.token_savings import main",
                 "raise SystemExit(main())",
-            ))
+            )),
+            encoding="utf-8",
         )
         payload = json.dumps({"hook_event_name": "Stop", "cwd": str(tmp_path), "session_id": "review"})
         started = time.monotonic()

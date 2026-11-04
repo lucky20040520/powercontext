@@ -70,7 +70,7 @@ def test_systemd_user_service_is_secret_free_target_scoped_and_reversible(
     assert installation.unit_name == "powercontext-skill-receiver-codex-a.service"
     assert "remote-watch" in contents
     assert '"--interval" "3"' in contents
-    assert str(config_file) in contents
+    assert str(config_file).replace("\\", "\\\\") in contents
     assert "WorkingDirectory=" not in contents
     assert config.credential.get_secret_value() not in contents
     assert commands == [("daemon-reload",), ("enable", "--now", installation.unit_name)]
@@ -121,4 +121,4 @@ def test_systemd_user_service_uses_the_invoked_venv_entrypoint_when_it_is_not_on
     installation = install_systemd_user_service(config_file, config, interval_seconds=3)
 
     contents = installation.unit_path.read_text(encoding="utf-8")
-    assert str(entrypoint) in contents
+    assert str(entrypoint).replace("\\", "\\\\") in contents

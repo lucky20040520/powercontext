@@ -15,6 +15,7 @@ import json
 import os
 import shutil
 import stat
+import sys
 import time
 import uuid
 from collections.abc import Iterator
@@ -32,6 +33,8 @@ from powercontext.builtin.code.telemetry import stage
 
 @contextmanager
 def file_lock(path: Path, deadline: float, *, shared: bool = False, wait: bool = True) -> Iterator[None]:
+    if sys.platform == "win32":
+        raise CodeError("unsupported_code_platform")
     try:
         import fcntl
     except ImportError as error:
@@ -53,6 +56,8 @@ def file_lock(path: Path, deadline: float, *, shared: bool = False, wait: bool =
 
 
 def hash_file(path: Path, deadline: float) -> str:
+    if sys.platform == "win32":
+        raise CodeError("unsupported_code_platform")
     import hashlib
 
     digest = hashlib.sha256()
@@ -67,6 +72,8 @@ def hash_file(path: Path, deadline: float) -> str:
 
 
 def read_private(path: Path, *, maximum: int = 64 * 1024 * 1024) -> bytes:
+    if sys.platform == "win32":
+        raise CodeError("unsupported_code_platform")
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         with os.fdopen(descriptor, "rb") as source:
@@ -199,6 +206,8 @@ class GenerationCache:
         return path
 
     def publish(self, staging: Path, manifest: dict[str, Any], deadline: float, max_bytes: int) -> Generation:
+        if sys.platform == "win32":
+            raise CodeError("unsupported_code_platform")
         manifest_content = json_bytes(manifest)
         write_private(staging / "manifest.json", manifest_content)
         write_private(staging / "reader.lock", b"")
@@ -230,6 +239,8 @@ class GenerationCache:
         return Generation(directory, manifest, self.store)
 
     def replace_json(self, name: str, value: dict[str, Any]) -> None:
+        if sys.platform == "win32":
+            raise CodeError("unsupported_code_platform")
         temporary = self.directory / ("pending-" + uuid.uuid4().hex)
         try:
             write_private(temporary, json_bytes(value))
@@ -252,6 +263,8 @@ class GenerationCache:
         return size
 
     def clear(self, deadline: float) -> dict[str, Any]:
+        if sys.platform == "win32":
+            raise CodeError("unsupported_code_platform")
         self.initialize()
         with file_lock(self.directory / "build.lock", deadline), file_lock(self.directory / "publish.lock", deadline):
             # Failed abandoned-build cleanup must not unpublish a usable generation.

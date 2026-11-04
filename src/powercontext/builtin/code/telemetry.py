@@ -68,7 +68,7 @@ def stage(name: str) -> Iterator[dict[str, TraceAttribute]]:
     finally:
         attributes["seconds"] = time.monotonic() - started
         attributes["outcome"] = outcome
-        if name in {"index", "query", "clear"}:
+        if name in {"index", "query", "clear"} and sys.platform != "win32":
             # These are process-lifetime high-water marks, not one request's allocation
             # or a simultaneous process-tree peak. Never add them together.
             with suppress(ImportError, OSError):

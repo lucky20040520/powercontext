@@ -199,7 +199,9 @@ def test_nested_form_text_is_complete_and_corruption_fails_atomically() -> None:
     writer = PdfWriter()
     writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
     page = writer.pages[0]
-    original = page.get_contents().get_data()
+    page_contents = page.get_contents()
+    assert page_contents is not None
+    original = page_contents.get_data()
     form = DecodedStreamObject()
     form.set_data(original)
     form = form.flate_encode()

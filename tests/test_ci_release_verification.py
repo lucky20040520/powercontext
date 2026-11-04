@@ -47,8 +47,26 @@ def run_release_step(tmp_path: Path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     uvx = bin_dir / "uvx"
-    uvx.write_text(f'#!{sys.executable}\nimport os\nprint(os.environ["TEST_PACKAGE_VERSION"])\n')
+    uvx.write_text(
+        '#!/usr/bin/env python\nimport os\nprint(os.environ["TEST_PACKAGE_VERSION"])\n',
+        encoding="utf-8",
+        newline="\n",
+    )
     uvx.chmod(0o755)
+    if os.name == "nt":
+        # Windows cannot use the extensionless shebang stub. Replace only the
+        # external version provider in the child; execute the workflow verbatim.
+        (bin_dir / "sitecustomize.py").write_text(
+            "import os, subprocess\n"
+            "_check_output = subprocess.check_output\n"
+            "def _version(command, *args, **kwargs):\n"
+            "    if isinstance(command, list) and command and command[0] == 'uvx':\n"
+            "        value = os.environ['TEST_PACKAGE_VERSION'] + '\\n'\n"
+            "        return value if kwargs.get('text') else value.encode()\n"
+            "    return _check_output(command, *args, **kwargs)\n"
+            "subprocess.check_output = _version\n",
+            encoding="utf-8",
+        )
     output = tmp_path / "output"
 
     def run(workflow_name: str, tag: str, package_version: str):
@@ -67,6 +85,7 @@ def run_release_step(tmp_path: Path):
             env={
                 **os.environ,
                 "PATH": os.pathsep.join((str(bin_dir), str(Path(sys.executable).parent), os.environ.get("PATH", ""))),
+                "PYTHONPATH": os.pathsep.join((str(bin_dir), os.environ.get("PYTHONPATH", ""))),
                 "RELEASE_TAG": tag,
                 "RELEASE_PACKAGE": "powercontext",
                 "TEST_PACKAGE_VERSION": package_version,

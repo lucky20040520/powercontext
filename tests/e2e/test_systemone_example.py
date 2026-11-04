@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,7 @@ from powercontext.builtin.inference import InferenceUsage
 from powercontext.builtin.runtime import DecisionOutcome, DecisionRequest, DecisionResult
 
 _BASELINE = "def cents(text: str) -> int:\n    return round(float(text) * 100)\n"
+_POSIX_EXECUTION = pytest.mark.skipif(os.name != "posix", reason="verification requires POSIX resource limits")
 _REMEMBERED = """\
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
@@ -108,6 +110,7 @@ async def _step(client: httpx.AsyncClient, run_id: str, name: str) -> dict[str, 
 
 
 @pytest.mark.parametrize("review_timeout", [False, True], ids=["advisory-yes", "advisory-timeout"])
+@_POSIX_EXECUTION
 def test_experiment_persists_actual_results_across_processes_and_server_restart(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, review_timeout: bool
 ) -> None:
@@ -207,6 +210,7 @@ def test_experiment_persists_actual_results_across_processes_and_server_restart(
         assert source.decode() == completed["generated"][arm]["code"]
 
 
+@_POSIX_EXECUTION
 def test_unconfigured_generation_and_partial_provider_failure_can_resume_without_reviewers(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -289,6 +293,7 @@ def test_local_api_rejects_cross_origin_or_untrusted_host_requests(tmp_path: Pat
     asyncio.run(scenario())
 
 
+@_POSIX_EXECUTION
 def test_concurrent_requests_and_cancelled_generation_preserve_completed_work(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

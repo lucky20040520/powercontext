@@ -338,6 +338,7 @@ def _git_value(cwd: str, *arguments: str) -> str | None:
             check=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             timeout=2,
         )
     except (OSError, subprocess.SubprocessError):

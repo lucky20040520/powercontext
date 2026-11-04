@@ -107,6 +107,7 @@ def test_explicit_timezone_takes_precedence_over_machine_timezone(monkeypatch) -
 
 
 def test_dependency_inspection_prefers_aliyun_for_china_timezone(monkeypatch) -> None:
+    monkeypatch.setattr(seekdb_installer.sys, "platform", "linux")
     monkeypatch.delenv("UV_DEFAULT_INDEX", raising=False)
     monkeypatch.delenv("UV_INDEX_URL", raising=False)
     monkeypatch.setattr(seekdb_installer, "_validated_version", lambda: None)

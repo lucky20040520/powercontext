@@ -101,6 +101,11 @@ Use `make e2e-test` for cross-component behavior, `make contract-test` for OpenA
 Before raising a pull request you should also run tox when a change may affect supported Python versions.
 This requires you to have the relevant Python versions installed. The same version matrix runs in CI.
 
+Product quality checks use the development dependencies in `uv.lock`; install them with
+`uv sync --locked`. The organizer-owned `competition/` assets have their own locked dependencies
+and acceptance runner. Product formatting and type checks leave those assets unchanged; run
+their checks separately with `make -C competition test` in the documented competition environment.
+
 6. Commit your changes and push your branch to GitHub:
 
 ```bash

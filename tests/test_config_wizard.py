@@ -15,6 +15,7 @@
 """User-visible file generation flows for the bilingual configuration wizard."""
 
 import json
+import os
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -294,7 +295,8 @@ def test_base_wizard_writes_private_environment_without_models(tmp_path: Path) -
     assert "API key" not in result.output
     assert "Model service" not in result.output
     assert not database.exists()
-    assert output.stat().st_mode & 0o777 == 0o600
+    if os.name != "nt":
+        assert output.stat().st_mode & 0o777 == 0o600
     assert CliRunner().invoke(app, ["validate", "--env-file", str(output)]).exit_code == 0
 
 
@@ -459,7 +461,8 @@ def test_dashboard_finish_shows_new_token_once_and_clear_old_bindings(tmp_path: 
     assert "POWERCONTEXT_CODEX_SCOPE_ID" not in client_values
     assert "POWERCONTEXT_CODEX_CONTEXT_ASSEMBLY" not in client_values
     assert client_values["POWERCONTEXT_SERVER_AUTH_TOKEN"] == token
-    assert output.stat().st_mode & 0o777 == 0o600
+    if os.name != "nt":
+        assert output.stat().st_mode & 0o777 == 0o600
 
 
 def test_full_memory_configuration_shares_provider_and_adds_profile_recall(tmp_path: Path) -> None:

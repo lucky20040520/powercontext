@@ -27,7 +27,7 @@ def run_scan(
     tmp_path: Path, *, fake_docker: str, env_overrides: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess[str]:
     docker = tmp_path / "docker"
-    docker.write_text(fake_docker, encoding="utf-8")
+    docker.write_text(fake_docker, encoding="utf-8", newline="\n")
     docker.chmod(0o755)
     evidence = tmp_path / "evidence"
     evidence.mkdir()
@@ -59,7 +59,7 @@ def run_scan(
 
         def to_posix(path: Path) -> str:
             return subprocess.run(
-                [str(cygpath), "-u", str(path)], capture_output=True, text=True, check=True
+                [str(cygpath), "-u", str(path)], capture_output=True, text=True, encoding="utf-8", check=True
             ).stdout.strip()
 
         bash = str(git_bash)
@@ -75,6 +75,7 @@ def run_scan(
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         check=False,
     )
 

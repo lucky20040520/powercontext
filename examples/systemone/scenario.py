@@ -18,6 +18,8 @@ The AST gate intentionally accepts only a small amount-parser language. Together
 with an isolated interpreter, resource limits and a credential-free environment,
 this limits the local demonstration's execution surface. It is not a general
 Python sandbox and must not be exposed as a public code execution service.
+Execution requires POSIX resource limits; unsupported platforms reject source
+before starting a child process.
 """
 
 # ruff: noqa: RUF001
@@ -299,6 +301,9 @@ async def verify_code(code: str, directory: Path) -> dict[str, Any]:
         _validate_source(code)
     except (SyntaxError, ValueError, TypeError, RecursionError) as error:
         result["error"] = f"Code was not executed: {error}"
+        return result
+    if os.name != "posix":
+        result["error"] = "Code was not executed: verification requires POSIX resource limits."
         return result
     runner_path = directory / "verify_amount.py"
     await asyncio.to_thread(runner_path.write_text, _RUNNER, encoding="utf-8")
