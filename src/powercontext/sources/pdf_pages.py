@@ -241,6 +241,12 @@ PDF_PAGE_SOURCE_DEFINITION: SourceDefinition[PDFPageInput, PDFPageSource, PDFPag
 _WORDS = re.compile(r"[a-z]+|\d+")
 _IDENTITY_WORDS = re.compile(r"[a-z0-9]+")
 _REPORT_YEAR = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
+_EXPLICIT_REPORT_YEAR = re.compile(
+    r"(?<!\d)((?:19|20)\d{2})[\s_-]*(?:annual[\s_-]+report|(?:form[\s_-]+)?10[\s_-]*[kq])\b"
+    r"|\b(?:annual[\s_-]+report|(?:form[\s_-]+)?10[\s_-]*[kq])[\s_-]+"
+    r"(?:for[\s_-]+)?(?:fy[\s_-]*)?((?:19|20)\d{2})(?!\d)",
+    re.IGNORECASE,
+)
 _REPORT_SUFFIXES = frozenset({
     "10k",
     "10q",
@@ -480,7 +486,7 @@ def _select_reports(records: list[MemoryEntryRecord], question: str) -> list[Mem
         for end in range(start + 1, min(start + 6, len(words)) + 1)
     }
     documents = {record.entry.text.partition("\n")[0] for record in records}
-    selected = set()
+    selected: dict[str, set[str]] = {}
     for document in documents:
         # Reporting periods and suffixes are not part of the company name.
         # Keep alphanumeric company tokens such as 3M intact.
@@ -496,14 +502,30 @@ def _select_reports(records: list[MemoryEntryRecord], question: str) -> list[Mem
         if len(company_words) >= 3:
             aliases.add("".join(word[0] for word in company_words))
         if aliases & mentioned_names:
-            selected.add(document)
+            selected.setdefault(company, set()).add(document)
     if not selected:
         return records
-    years = set(_REPORT_YEAR.findall(question))
-    matching_years = {document for document in selected if years.intersection(_REPORT_YEAR.findall(document))}
-    if matching_years:
-        selected = matching_years
-    return [record for record in records if record.entry.text.partition("\n")[0] in selected]
+    report_years = {year for match in _EXPLICIT_REPORT_YEAR.findall(question) for year in match if year}
+    years = report_years or set(_REPORT_YEAR.findall(question))
+    documents = {
+        document
+        for company_documents in selected.values()
+        for document in _select_report_years(company_documents, years, explicit=bool(report_years))
+    }
+    return [record for record in records if record.entry.text.partition("\n")[0] in documents]
+
+
+def _select_report_years(documents: set[str], years: set[str], *, explicit: bool) -> set[str]:
+    matching = {document for document in documents if years.intersection(_REPORT_YEAR.findall(document))}
+    if not matching:
+        return documents
+    if explicit:
+        return matching
+    # A financial year is not a filing identity: newer reports can contain its
+    # comparative or restated figures. Apply fallback independently per company.
+    return matching | {
+        document for document in documents if any(year > min(years) for year in _REPORT_YEAR.findall(document))
+    }
 
 
 def _rank_pages(

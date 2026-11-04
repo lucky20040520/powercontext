@@ -353,3 +353,50 @@ def test_financial_paraphrases_recall_evidence_amid_literal_mentions(
             assert any(entry.text == f"NORTH_STAR_2025_10K\n{evidence}" for entry in entries)
 
     asyncio.run(run())
+
+
+def test_financial_year_does_not_exclude_comparative_evidence_in_newer_report(tmp_path: Path) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'comparatives.db'}"))
+    pages = [
+        ("ACME_2024_10K", "Revenue 2024. See segment disclosures in subsequent filings."),
+        (
+            "ACME_2025_10K",
+            "Segment revenue\nComparative 2024 segment revenue was restated after the reorganization. "
+            "Industrial segment 800; services segment 200.",
+        ),
+    ]
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, "What was ACME's segment revenue in FY2024?", limit=20)
+            texts = [(await memory.get(GetMemoryEntryRequest(citation=item))).entry.text for item in citations]
+            assert any("Industrial segment 800" in text for text in texts)
+            # An explicit report identity still restricts the document revision.
+            citations = await search_pdf_pages(memory, "What revenue appears in ACME's 2024 annual report?", limit=20)
+            texts = [(await memory.get(GetMemoryEntryRequest(citation=item))).entry.text for item in citations]
+            assert texts and all(text.startswith("ACME_2024_10K\n") for text in texts)
+
+    asyncio.run(run())
+
+
+def test_comparison_keeps_each_named_company_when_one_lacks_matching_report_year(tmp_path: Path) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'comparison.db'}"))
+    pages = [
+        ("ACME_2025_10K", "Revenue 2025 100, with a comparative 2024 revenue of 90."),
+        ("RIVAL_2024_10K", "Revenue 2024 200."),
+    ]
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, "Compare ACME and Rival revenue in FY2025", limit=20)
+            documents = {
+                (await memory.get(GetMemoryEntryRequest(citation=item))).entry.text.split("\n", 1)[0]
+                for item in citations
+            }
+            assert documents == {"ACME_2025_10K", "RIVAL_2024_10K"}
+
+    asyncio.run(run())

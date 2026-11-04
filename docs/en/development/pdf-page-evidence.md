@@ -58,9 +58,11 @@ normalization preserves words such as loss and business and handles taxes.
 Recognized company names in report IDs select the candidate reports before page
 ranking. Corporate suffixes and conjunctions are normalized; initialisms are
 derived from multiword report identities without a company lookup table.
-Matching report years are preferred when present; otherwise the named
-company's reports remain eligible. Questions naming several companies or years
-keep their matching reports. Without a recognized identity, the whole scope
+An explicit annual-report or 10-K/10-Q year selects matching available reports.
+A financial year alone also keeps newer reports that may contain comparative
+or restated evidence. If no report year matches, the named company's available
+reports remain eligible; this fallback is applied separately to each company.
+Without a recognized identity, the whole scope
 remains searchable. Business overview headings can supply geographical context
 even when the page uses regional names rather than repeating the question terms;
 those headings may occur after a long preamble.
