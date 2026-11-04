@@ -241,14 +241,42 @@ PDF_PAGE_SOURCE_DEFINITION: SourceDefinition[PDFPageInput, PDFPageSource, PDFPag
 _WORDS = re.compile(r"[a-z]+|\d+")
 _IDENTITY_WORDS = re.compile(r"[a-z0-9]+")
 _REPORT_YEAR = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
-_REPORT_SUFFIXES = frozenset({"10k", "10q", "8k", "annual", "report", "form", "dated", "inc", "corp", "company", "plc"})
+_REPORT_SUFFIXES = frozenset({
+    "10k",
+    "10q",
+    "8k",
+    "annual",
+    "report",
+    "form",
+    "dated",
+    "inc",
+    "corp",
+    "company",
+    "plc",
+    "corporation",
+    "incorporated",
+    "holding",
+    "holdings",
+    "limited",
+    "ltd",
+    "llc",
+    "co",
+})
+_INFLECTIONS = {"taxes": "tax", "losses": "loss", "businesses": "business", "analyses": "analysis"}
 
 
 def _tokens(text: str) -> list[str]:
     words = _WORDS.findall(text.lower())
     # Light inflection normalization keeps numbers and accounting abbreviations.
     return [
-        word[:-3] + "y" if word.endswith("ies") else word[:-1] if len(word) > 3 and word.endswith("s") else word
+        _INFLECTIONS.get(
+            word,
+            word[:-3] + "y"
+            if word.endswith("ies")
+            else word[:-1]
+            if len(word) > 3 and word.endswith("s") and not word.endswith(("ss", "us", "is"))
+            else word,
+        )
         for word in words
     ]
 
@@ -262,7 +290,8 @@ _STOPWORDS = frozenset(
         "give answer respond response question calculate define assuming perspective investment "
         "analyst details shown relying directly explicitly outlined primarily reported important "
         "state usd million millions billion billions fy fiscal year years period periods "
-        "increase increased decrease decreased change changed compare comparison"
+        "increase increased decrease decreased change changed compare comparison much many amount quantity "
+        "according respective respectively following financial statement statements unadjusted adjusted"
     )
 )
 # General accounting vocabulary, independent of companies, reports and questions.
@@ -290,6 +319,15 @@ _CONCEPTS = (
     ("d a", "depreciation amortization"),
     ("inventory", "stock", "inventories"),
     ("debt", "borrowing", "indebtedness"),
+    ("buyback", "share repurchase", "stock repurchase", "treasury stock", "shares purchased"),
+    ("supplier", "accounts payable", "trade payable"),
+    ("customer credit", "accounts receivable", "trade receivable"),
+    ("research and development", "research development", "r d", "product development", "product engineering"),
+    ("lease", "rental", "rent", "lease commitment"),
+    ("acquisition", "business combination", "purchase consideration"),
+    ("effective tax rate", "income tax provision", "income tax expense", "income before tax", "pretax income"),
+    ("maturity", "maturities", "current portion", "current installment", "current maturities"),
+    ("shareholder", "stockholder"),
 )
 # Metric names expand toward their supporting statement lines. The reverse
 # direction would turn an ordinary revenue question into many unrelated ratios.
@@ -304,6 +342,22 @@ _METRICS = {
     "gross margin": ("gross profit", "revenue", "cost of sale"),
     "operating margin": ("operating income", "revenue"),
     "free cash flow": ("operating cash flow", "capital expenditure"),
+    "net profit margin": ("net income", "net earning", "net sale", "revenue"),
+    "net income margin": ("net income", "net sale", "revenue"),
+    "return on invested capital": ("operating profit", "income tax", "invested capital", "equity", "debt"),
+    "return on capital employed": ("operating income", "total asset", "current liability"),
+    "fixed asset turnover": ("net sale", "revenue", "property plant equipment"),
+    "receivable turnover": ("net sale", "revenue", "accounts receivable"),
+    "inventory turnover": ("cost of sale", "cost of revenue", "inventory"),
+    "days sales outstanding": ("accounts receivable", "net sale", "revenue"),
+    "days inventory outstanding": ("inventory", "cost of sale"),
+    "days payable outstanding": ("accounts payable", "cost of sale"),
+    "cash conversion cycle": ("accounts receivable", "inventory", "accounts payable", "cost of sale", "net sale"),
+    "debt to equity": ("total debt", "borrowing", "shareholder equity", "stockholder equity"),
+    "debt to asset": ("total debt", "total asset"),
+    "interest coverage": ("operating income", "interest expense"),
+    "dividend payout": ("dividend", "net income"),
+    "earnings per share": ("basic", "diluted", "net income", "weighted average share"),
 }
 _STATEMENT_PREFIX = r"^\s*(?:(?:consolidated|combined|condensed|unaudited)\s+)*"
 _STATEMENT_SUFFIX = r"(?:\s*\([^\n)]*\))*\s*$"
@@ -360,7 +414,13 @@ def _query_terms(question: str) -> tuple[dict[str, float], tuple[tuple[str, ...]
     expansions.extend(
         alternatives for metric, alternatives in _METRICS.items() if " " + " ".join(_tokens(metric)) + " " in normalized
     )
-    phrases: list[tuple[str, ...]] = []
+    # Literal accounting phrases remain a separate signal from broad synonyms.
+    phrases = [
+        tuple(raw[start : start + size])
+        for size in (2, 3)
+        for start in range(len(raw) - size + 1)
+        if all(word not in _STOPWORDS for word in raw[start : start + size])
+    ]
     for concept in expansions:
         for phrase in concept:
             alternative = tuple(_tokens(phrase))
@@ -368,8 +428,8 @@ def _query_terms(question: str) -> tuple[dict[str, float], tuple[tuple[str, ...]
                 phrases.append(alternative)
             for token in alternative:
                 if token not in _STOPWORDS:
-                    terms.setdefault(token, 0.35)
-    return terms, tuple(phrases)
+                    terms.setdefault(token, 0.5)
+    return terms, tuple(dict.fromkeys(phrases))
 
 
 async def search_pdf_pages(
@@ -414,9 +474,10 @@ def _select_reports(records: list[MemoryEntryRecord], question: str) -> list[Mem
     # Joining neighboring words accommodates report IDs such as COCA_COLA and
     # questions spelling the same name as CocaCola, without matching 3M to X3M.
     mentioned_names = {
-        "".join(question_words[start:end])
-        for start in range(len(question_words))
-        for end in range(start + 1, min(start + 6, len(question_words)) + 1)
+        "".join(words[start:end])
+        for words in (question_words, [word for word in question_words if word not in {"and", "the"}])
+        for start in range(len(words))
+        for end in range(start + 1, min(start + 6, len(words)) + 1)
     }
     documents = {record.entry.text.partition("\n")[0] for record in records}
     selected = set()
@@ -424,12 +485,17 @@ def _select_reports(records: list[MemoryEntryRecord], question: str) -> list[Mem
         # Reporting periods and suffixes are not part of the company name.
         # Keep alphanumeric company tokens such as 3M intact.
         company_part = _REPORT_YEAR.split(document, maxsplit=1)[0]
-        company = "".join(
+        company_words = [
             word
             for word in _IDENTITY_WORDS.findall(company_part.lower())
-            if word not in _REPORT_SUFFIXES and not word.isdigit()
-        )
-        if len(company) > 1 and company not in _STOPWORDS and company in mentioned_names:
+            if word not in _REPORT_SUFFIXES and word not in {"and", "the"} and not word.isdigit()
+        ]
+        company = "".join(company_words)
+        aliases = {company} if len(company) > 1 and company not in _STOPWORDS else set()
+        # Derive initialisms from the caller's identity, without company tables.
+        if len(company_words) >= 3:
+            aliases.add("".join(word[0] for word in company_words))
+        if aliases & mentioned_names:
             selected.add(document)
     if not selected:
         return records
@@ -446,7 +512,7 @@ def _rank_pages(
     phrases: tuple[tuple[str, ...], ...],
     limit: int,
 ) -> tuple[MemoryCitation, ...]:
-    """Score one exact corpus snapshot with length-normalized lexical evidence."""
+    """Fuse page, literal-query and local-passage rankings of the same snapshot."""
 
     bodies = [record.entry.text.partition("\n")[2] for record in records]
     token_lists = [_tokens(body) for body in bodies]
@@ -454,20 +520,22 @@ def _rank_pages(
     frequency = Counter(token for count in counts for token in count)
     average_length = max(1.0, sum(map(len, token_lists)) / len(records))
     idf = {term: math.log1p((len(records) - frequency[term] + 0.5) / (frequency[term] + 0.5)) for term in terms}
-    ranked: list[tuple[float, int]] = []
+    literal_terms = {term: weight for term, weight in terms.items() if weight == 1.0}
+    rankings: list[list[tuple[float, int]]] = [[], [], []]
     for index, (record, tokens, count) in enumerate(zip(records, token_lists, counts, strict=True)):
-        normalization = 1.2 * (0.55 + 0.45 * len(tokens) / average_length)
-        score = sum(
-            weight * idf[term] * count[term] * 2.2 / (count[term] + normalization)
-            for term, weight in terms.items()
-            if count[term]
-        )
+        score = _bm25(count, len(tokens), terms, idf, average_length)
+        literal_score = _bm25(count, len(tokens), literal_terms, idf, average_length)
         # Phrase matches favor actual statement bodies over incidental mentions.
         normalized = " " + " ".join(tokens) + " "
         score += sum(
             sum(idf.get(term, 0.0) for term in phrase) * 0.6
             for phrase in phrases
             if " " + " ".join(phrase) + " " in normalized
+        )
+        literal_score += sum(
+            sum(idf[term] for term in phrase) * 0.6
+            for phrase in phrases
+            if all(term in literal_terms for term in phrase) and " " + " ".join(phrase) + " " in normalized
         )
         # Actual statement titles are stronger evidence than a long discussion
         # repeating the same metrics. Restrict to complete heading lines near
@@ -486,9 +554,51 @@ def _rank_pages(
         if any(term.isdigit() and len(term) == 4 and terms.get(term) == 1.0 for term in document_tokens):
             score *= 1.25
         if score > 0:
-            ranked.append((score, index))
-    ranked.sort(key=lambda item: (-item[0], item[1]))
-    return tuple(records[index].citation for _, index in ranked[:limit])
+            rankings[0].append((score, index))
+        if literal_score > 0:
+            rankings[1].append((literal_score, index))
+        # A table or short note can occupy only a small part of a dense page.
+        # Fixed overlapping token windows do not alter the captured page text.
+        passage_score = max(
+            (
+                _bm25(Counter(tokens[start : start + 120]), len(tokens[start : start + 120]), terms, idf, 120.0)
+                for start in range(0, len(tokens), 60)
+            ),
+            default=0.0,
+        )
+        if passage_score > 0:
+            rankings[2].append((passage_score, index))
+    return _fuse_page_rankings(records, rankings, limit)
+
+
+def _bm25(
+    count: Counter[str], length: int, terms: dict[str, float], idf: dict[str, float], average_length: float
+) -> float:
+    normalization = 1.2 * (0.55 + 0.45 * length / average_length)
+    return sum(
+        weight * idf[term] * count[term] * 2.2 / (count[term] + normalization)
+        for term, weight in terms.items()
+        if count[term]
+    )
+
+
+def _fuse_page_rankings(
+    records: list[MemoryEntryRecord], rankings: list[list[tuple[float, int]]], limit: int
+) -> tuple[MemoryCitation, ...]:
+    fused: dict[int, float] = {}
+    # Preserve the statement-aware channel while allowing literal evidence and
+    # locally relevant notes to compete without incompatible raw score scales.
+    for weight, ranking in zip((1.0, 0.65, 0.8), rankings, strict=True):
+        ranking.sort(key=lambda item: (-item[0], item[1]))
+        for rank, (_, index) in enumerate(ranking, 1):
+            fused[index] = fused.get(index, 0.0) + weight / (20 + rank)
+    # Rank-only fusion loses how much stronger an actual statement is than a
+    # page merely repeating every query term. Retain bounded primary confidence.
+    maximum = max((score for score, _ in rankings[0]), default=1.0)
+    for score, index in rankings[0]:
+        fused[index] += 0.1 * score / maximum
+    ordered = sorted(fused, key=lambda index: (-fused[index], index))
+    return tuple(records[index].citation for index in ordered[:limit])
 
 
 __all__ = [

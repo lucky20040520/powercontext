@@ -276,7 +276,14 @@ def test_business_overview_with_region_names_can_answer_geography_question(tmp_p
 
 @pytest.mark.parametrize(
     ("document", "company"),
-    [("3M_2025_10K", "3M"), ("COCA_COLA_2025_10K", "CocaCola"), ("ACME_INC_2025_10K", "Acme")],
+    [
+        ("3M_2025_10K", "3M"),
+        ("COCA_COLA_2025_10K", "CocaCola"),
+        ("ACME_INC_2025_10K", "Acme"),
+        ("NORTH_STAR_HOLDINGS_CORPORATION_2025_10K", "North Star"),
+        ("NORTH_AND_SOUTH_2025_10K", "North & South"),
+        ("NORTHERN_SCIENTIFIC_INSTRUMENTS_2025_10K", "NSI"),
+    ],
 )
 def test_report_identity_matching_and_fallback_keep_relevant_pages(tmp_path: Path, document: str, company: str) -> None:
     config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'identities.db'}"))
@@ -299,5 +306,50 @@ def test_report_identity_matching_and_fallback_keep_relevant_pages(tmp_path: Pat
                 for citation in general
             }
             assert identities == {document, "X3M_2025_10K"}
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("question", "evidence"),
+    [
+        (
+            "How much did North Star spend on share buybacks?",
+            "Treasury stock\nCommon shares repurchased during the year cost 250.",
+        ),
+        (
+            "How much does North Star owe its suppliers?",
+            "Consolidated Balance Sheets\nAccounts payable 123.",
+        ),
+        (
+            "What is North Star effective tax rate?",
+            "Income taxes\nProvision for income taxes 100\nIncome before income taxes 400.",
+        ),
+        (
+            "What were North Star operating lease payments?",
+            "Lease commitments\nRent expense 90\nFuture minimum rental obligations 100.",
+        ),
+    ],
+    ids=["buybacks", "supplier-liabilities", "tax-rate", "lease-payments"],
+)
+def test_financial_paraphrases_recall_evidence_amid_literal_mentions(
+    tmp_path: Path, question: str, evidence: str
+) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'paraphrases.db'}"))
+    # Index and agenda mentions repeat the question's vocabulary but provide
+    # none of its financial evidence. They must not fill every retrieval slot.
+    boilerplate = f"North Star annual report 2025\n{question}\nIndex reference only.\n" * 8
+    pages = [("NORTH_STAR_2025_10K", f"Agenda {index}\n{boilerplate}") for index in range(25)]
+    pages.append(("NORTH_STAR_2025_10K", evidence))
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, question, limit=20)
+            assert 0 < len(citations) <= 20
+            entries = [(await memory.get(GetMemoryEntryRequest(citation=item))).entry for item in citations]
+            assert len({entry.sources[0].source_id for entry in entries}) == len(entries)
+            assert any(entry.text == f"NORTH_STAR_2025_10K\n{evidence}" for entry in entries)
 
     asyncio.run(run())

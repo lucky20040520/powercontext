@@ -47,10 +47,18 @@ for citation in citations:
 ```
 
 Retrieval reads active entries through the public scoped `Memory.list()` API. It
-uses the exact snapshot's citations and ranks complete page text with BM25,
-financial vocabulary expansion, statement phrases, and document/year matching.
+uses the exact snapshot's citations and combines three BM25 rankings: complete
+page evidence with statement headings, literal question terms and phrases, and
+overlapping 120-token passages. Reciprocal-rank fusion retains bounded confidence
+from the statement-aware score. Local passages help retrieve short notes within
+long pages without changing the captured text or its page citation.
+Financial vocabulary covers accounting paraphrases and supporting lines for
+ratios, cash conversion, buybacks, leases, taxes, and capital returns. Inflection
+normalization preserves words such as loss and business and handles taxes.
 Recognized company names in report IDs select the candidate reports before page
-ranking. Matching report years are preferred when present; otherwise the named
+ranking. Corporate suffixes and conjunctions are normalized; initialisms are
+derived from multiword report identities without a company lookup table.
+Matching report years are preferred when present; otherwise the named
 company's reports remain eligible. Questions naming several companies or years
 keep their matching reports. Without a recognized identity, the whole scope
 remains searchable. Business overview headings can supply geographical context
@@ -68,14 +76,6 @@ persistence, and citation integrity. Hidden evidence recall and token-quality
 thresholds require the evaluator's withheld annotations and are not established
 by that selftest.
 
-A local scale check under the official 1-CPU, 2-GB container used 1,151 page
-observations made from replicas of the public report. Parsing the original 503
-pages took 7.3 seconds; persisting and flushing the synthetic corpus took 47.3
-seconds. After reopening Runtime, queries with the final ranking took about
-0.55–0.63 seconds each, with a process peak RSS of approximately 206 MiB.
-These measurements characterize this synthetic workload;
-they do not measure hidden-set recall or establish a general latency guarantee.
-
 Validation with the competition's fixed offline dependencies:
 
 ```sh
@@ -85,60 +85,33 @@ make -C competition test-pdf
 Additional behavior tests live in `tests/test_pdf_pages.py` and
 `tests/e2e/test_pdf_page_retrieval.py`.
 
-## Public quality validation
+## Local validation
 
-The implementation was evaluated on 2026-10-27 against the complete public PDF and all five published
-questions. The reference was restricted to those questions' eight evidence
-annotations, covering six distinct physical pages, from
-[FinanceBench's fixed public dataset](https://github.com/patronus-ai/financebench/blob/cc39aeb4afdf33909ee1412188bf89035950c2eb/data/financebench_open_source.jsonl).
-Answers and explanations were excluded. Dataset licensing remains CC BY-NC 4.0;
-the original report retains its respective rights.
+Python 3.12 with the competition's pypdf 6.19.0 was used on Windows. The official
+503-page public acceptance suite passed all six tests. Parser and real-Runtime
+regressions cover persistence, scope isolation, revisions, financial paraphrases,
+company identities, distinct pages, and exact citation readback.
 
-Inference used the official offline 1-CPU, 2-GB container with read-only candidate
-sources. Annotation files were not mounted in that container. All 503 pages were
-ingested into real SQLite Runtime; retrieval ran after closing and reopening
-Runtime, and every returned citation was read back through `memory.get`.
-An external scorer compared the frozen candidate's outputs with the references.
+Five complete original reports were checked: PepsiCo 2022 (503 pages), 3M 2022
+(252), Activision Blizzard 2022 (312), Adobe 2022 (99), and AES 2022 (257).
+The additional four are the first four companies alphabetically with a 2022 10-K
+in the fixed FinanceBench PDF directory. Selection did not use questions or gold.
 
-Both texts were lowercased and tokenized with `[a-z]+|\d+`. Token overlap used
-multiset counts, without applying retrieval's inflection normalization. Each
-annotation's recall and each annotated page's F1 were checked separately, rather
-than admitting failures through an average. Reference page numbers were converted from zero-based numbering
-to 1-based physical pages. Recall@20 summed each question's distinct matching
-document-page pairs and divided by the sum of distinct reference pages.
+Across all 1,423 pages, lowercased `[a-z]+|\d+` multiset token counts were within
+90%–110% of independent `pdftotext -layout -enc UTF-8` output; minimum page token
+F1 against that output was 0.981132. These are independent extraction checks,
+not comparisons with the evaluator's frozen counts or annotated evidence.
 
-| Metric | Required | Observed | Status |
-| --- | --- | --- | --- |
-| Per-page token counts against platform frozen counts | 90%–110% | Platform reference unavailable | Not verified |
-| Per-page token counts against independent Poppler extraction | 90%–110% | 503/503 pages within range | Cross-check passed; not the platform reference |
-| Token counts against annotated full-page text | 90%–110% | 6/6 pages within range; ratios 1.0000–1.0139 | Annotated pages passed |
-| Evidence-token recall | ≥0.95 per annotation | Minimum 0.9962121212; all 8 annotations passed | Public split passed |
-| Annotated full-page token F1 | ≥0.95 per page | Minimum 0.9793459552; all 8 annotation comparisons passed | Public split passed |
-| Evidence-page Recall@20 | ≥0.70 for the split | 8/8 = 1.000 | Public split passed |
+All 1,423 observations were ingested into one real SQLite Runtime with the fixed
+public evidence pipeline. Duplicate submission remained idempotent. After
+closing and reopening Runtime, the five public questions and sixteen generic
+financial queries returned 420 exact citations. Every citation was read through
+`memory.get`, checked against its original Source, and verified to name a distinct
+page from the requested report. Local query times were 0.52–0.72 seconds;
+ingestion and flush took 46.2 seconds. This was a local Windows run, not the
+official CPU/memory-limited container, and is not a general latency guarantee.
 
-The independent full-document reference used Poppler `pdftotext 25.02.0` with
-`-layout -enc UTF-8`. It cannot establish agreement with the platform's undistributed
-frozen counts. All five published questions retrieved all their reference pages.
-The withheld split has not been evaluated.
-
-### Additional public regression sample
-
-Two additional complete reports, `VERIZON_2022_10K` (124 pages) and
-`WALMART_2020_10K` (170 pages), were ingested into a separate shared scope. They
-were selected as the last two companies alphabetically in the same upstream
-public dataset, then the last report ID alphabetically for each company, without
-selecting by scores. Their four published questions have six evidence annotations
-covering five distinct pages. The same offline inference/reference isolation and
-per-annotation scoring rules applied.
-
-| Metric | Observed | Status |
-| --- | --- | --- |
-| Evidence-token recall | Minimum 0.9912663755; all 6 annotations ≥0.95 | Passed |
-| Annotated full-page F1 | Minimum 0.9925558313; all 6 comparisons ≥0.95 | Passed |
-| Evidence-page Recall@20 | 5/6 = 0.8333333333 | Passed the 0.70 threshold for this sample |
-| Independent Poppler token-count cross-check | 294/294 pages within 90%–110% | Passed; not the platform frozen reference |
-
-One question still missed its reference page. This supplementary public sample
-does not establish the challenge's withheld-split score. The public and withheld
-splits must each satisfy Recall@20 ≥0.70 independently; scores cannot be pooled to
-compensate for a failing split.
+No answers, gold evidence, or evidence-page lists were used in this validation.
+Evidence-page Recall@20 on the official public and withheld splits and quality
+against the evaluator's frozen reference remain unverified. Passing public
+acceptance or these independent checks does not establish the 50-point score.
