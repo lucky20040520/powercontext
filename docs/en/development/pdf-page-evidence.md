@@ -139,7 +139,7 @@ The fixes combine a bounded native FTS channel with explicit disclosure componen
 geographic headings, customer-percentage relationships and initialism normalization.
 Small result limits preserve the primary statement ranking.
 
-The workflow additionally captures eleven complete original reports (2,352 pages),
+The workflow additionally captures fourteen complete original reports (2,853 pages),
 checks independent term counts and selected whole-page token F1, then runs the
 40-case benchmark in the official offline container. The fixtures and evaluation
 script are outside `src/` and never participate in assessed parsing or retrieval.
@@ -151,3 +151,10 @@ captured-Source byte budget instead. The same rule applies to write validation,
 canonical content hashes and persisted-version rebuilding, so restarting does not
 make a long page unreadable. Ordinary entries retain the 8 KiB contract and errors.
 The raw page is never truncated or split to fit an ordinary note limit.
+
+A page that only paints one Form is extracted with that Form's own font resources.
+Multiple painted objects and additional page text retain the original page path.
+Trailing backwards kerning also admits character-preserving layout extraction to
+repair words spanning text runs. Latin presentation ligatures expand to their
+letters, and page text uses NFC so persistence does not change its projection.
+Regression tests cover page fonts and two nested Form canvases.

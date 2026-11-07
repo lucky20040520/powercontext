@@ -40,6 +40,11 @@ if TYPE_CHECKING:
     from powercontext.builtin.runtime import MemoryEntryRecord, ScopedMemoryApplication
 
 
+_LATIN_LIGATURES = str.maketrans({
+    chr(code): unicodedata.normalize("NFKC", chr(code)) for code in range(0xFB00, 0xFB07)
+})
+
+
 class PDFDocumentInput(BaseModel):
     """Original PDF bytes; page numbers always refer to this exact revision."""
 
@@ -144,7 +149,49 @@ def _extract_page_text(page: PageObject) -> str:
                     raise TypeError("PDF page contents must be streams")  # noqa: TRY003
                 _validate_compression(resolved)
     _validate_form_streams(page, set())
-    return _extract_complete_text(page)
+    canvas = _text_bearing_page(page)
+    text = _extract_complete_text(canvas, prefer_layout=canvas is not page)
+    return unicodedata.normalize("NFC", text.translate(_LATIN_LIGATURES))
+
+
+def _text_bearing_page(page: PageObject) -> PageObject:
+    """Unwrap a text-only Form canvas without losing its own font resources.
+
+    Layout extraction otherwise misses fonts on pages that only invoke a Form.
+    Only a single painted Form with no other content is eligible; images, extra
+    invocations and page text retain their original extraction path.
+    """
+    from pypdf import PageObject
+    from pypdf.generic import DictionaryObject, NameObject, StreamObject
+
+    seen: set[int] = set()
+    while True:
+        contents = page.get_contents()
+        if contents is None or any(op not in (b"q", b"Q", b"cm", b"Do", b"gs") for _, op in contents.operations):
+            return page
+        calls = [args for args, op in contents.operations if op == b"Do"]
+        if len(calls) != 1 or len(calls[0]) != 1:
+            return page
+        resources = page.get("/Resources")
+        if resources is None:
+            return page
+        resources = resources.get_object()
+        objects = resources.get("/XObject")
+        if objects is None:
+            return page
+        form = objects.get_object()[calls[0][0]].get_object()
+        if not isinstance(form, StreamObject) or form.get("/Subtype") != "/Form" or id(form) in seen:
+            return page
+        seen.add(id(form))
+        fonts = form.get("/Resources", resources).get_object()
+        if not isinstance(fonts, DictionaryObject):
+            return page
+        canvas = PageObject(pdf=page.pdf)
+        canvas.update(page)
+        canvas.pop("/Parent", None)
+        canvas[NameObject("/Contents")] = form
+        canvas[NameObject("/Resources")] = fonts
+        page = canvas
 
 
 def _coalesce_kerning(items: list[Any]) -> list[Any]:
@@ -205,6 +252,7 @@ class _TextRunNormalizer:
     def __init__(self, page: PageObject) -> None:
         self.aliases = _font_aliases(page)
         self.rewritten = False
+        self.cross_run_kerning = False
         self.positioned = True
         self.font: tuple[Any, ...] = ()
         self.fonts: list[tuple[Any, ...]] = []
@@ -220,7 +268,17 @@ class _TextRunNormalizer:
             self._track_position(operator, operands)
             self._remove_overprint(operator, operands, cm, tm)
         if operator == b"TJ" and operands:
-            items = _coalesce_kerning(operands[0])
+            original = operands[0]
+            if (
+                len(original) >= 2
+                and isinstance(original[-1], (int, float))
+                and original[-1] > 40
+                and isinstance(original[-2], (str, bytes))
+                and original[-2]
+                and not original[-2][-1:].isspace()
+            ):
+                self.cross_run_kerning = True
+            items = _coalesce_kerning(original)
             self.rewritten |= len(items) != len(operands[0])
             operands[0] = ArrayObject(items)
 
@@ -257,7 +315,7 @@ class _TextRunNormalizer:
         self.positioned = False
 
 
-def _extract_complete_text(page: PageObject) -> str:
+def _extract_complete_text(page: PageObject, *, prefer_layout: bool = False) -> str:
     """Detect TJ word-boundary failures without a vocabulary or document table.
 
     Use layout only for affected pages, and only when it preserves every
@@ -267,11 +325,12 @@ def _extract_complete_text(page: PageObject) -> str:
 
     normalizer = _TextRunNormalizer(page)
     coalesced = page.extract_text(visitor_operand_before=normalizer.before, visitor_operand_after=normalizer.after)
-    if not normalizer.rewritten:
+    if not normalizer.rewritten and not normalizer.cross_run_kerning and not prefer_layout:
         return coalesced
-    plain = page.extract_text()
-    if Counter(_WORDS.findall(plain.lower())) == Counter(_WORDS.findall(coalesced.lower())):
-        return plain
+    if not prefer_layout and not normalizer.cross_run_kerning:
+        plain = page.extract_text()
+        if Counter(_WORDS.findall(plain.lower())) == Counter(_WORDS.findall(coalesced.lower())):
+            return plain
     layout = page.extract_text(
         extraction_mode="layout", layout_mode_space_vertically=False, layout_mode_strip_rotated=False
     )

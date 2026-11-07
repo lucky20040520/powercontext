@@ -11,10 +11,10 @@ additional-company group were both reviewed during development; neither is a bli
 estimate of the organizer's hidden-set performance. The five public questions have
 independently selected evidence pages, which may differ from official annotations.
 
-Eleven complete documents contain 2,352 physical pages. This includes the complete
+Fourteen complete documents contain 2,853 physical pages. This includes the complete
 Pfizer 2015 and PG&E 2018 reports used to reproduce the TJ kerning defect. The
 manifest records original-byte SHA-256 digests and independent per-page term counts
-from `pdftotext -layout -enc UTF-8`. Eight selected pages also have independent token
+from `pdftotext -layout -enc UTF-8`. Eighteen selected pages also have independent token
 multisets for whole-page F1 checks. These references are benchmark fixtures; they
 cannot replace PDF parsing and are not available to product code in assessment.
 
@@ -54,3 +54,8 @@ limit. Parsing logs report the largest UTF-8 page size per document. Single-page
 PDF evidence uses the bounded captured-Source budget without truncation; ordinary
 Memory entries keep their existing limit. Hashing and restart validation use the
 same reference-aware rule.
+
+The complete Nike 2015, Oracle 2015 and General Mills 2015 reports exercise
+Form-local font resources, cross-run backwards kerning and Latin presentation
+ligatures. Their independently extracted full-page references protect complete
+words rather than only checking page counts or successful parsing.

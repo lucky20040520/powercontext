@@ -275,3 +275,60 @@ def test_exact_glyph_overprinting_does_not_duplicate_words_or_remove_real_repeti
     writer.write(output)
     pages = parse_pdf_document(PDFDocumentInput(document_id="overprint", content=output.getvalue()))
     assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == ["revenue", "11"]
+
+
+def test_latin_ligatures_preserve_complete_financial_words() -> None:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    resources = writer.pages[0]["/Resources"]
+    assert isinstance(resources, DictionaryObject)
+    fonts = resources["/Font"]
+    assert isinstance(fonts, DictionaryObject)
+    font = fonts["/F1"]
+    assert isinstance(font, DictionaryObject)
+    font[NameObject("/Encoding")] = DictionaryObject({
+        NameObject("/Type"): NameObject("/Encoding"),
+        NameObject("/BaseEncoding"): NameObject("/WinAnsiEncoding"),
+        NameObject("/Differences"): ArrayObject([NumberObject(128), NameObject("/fi"), NameObject("/fl")]),
+    })
+    stream = DecodedStreamObject()
+    stream.set_data(b"BT /F1 12 Tf 50 700 Td (Pro\200t and \200nancial cash \201ows 123) Tj ET")
+    writer.pages[0][NameObject("/Contents")] = stream
+    output = io.BytesIO()
+    writer.write(output)
+    pages = parse_pdf_document(PDFDocumentInput(document_id="ligatures", content=output.getvalue()))
+    assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == ["profit", "and", "financial", "cash", "flows", "123"]
+
+
+@pytest.mark.parametrize("form_depth", [0, 1, 2])
+def test_layout_repairs_split_words_with_page_or_nested_form_fonts(form_depth: int) -> None:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    page = writer.pages[0]
+    stream = DecodedStreamObject()
+    stream.set_data(
+        b"BT /F1 12 Tf 50 700 Td [(Reg) 3 (ulatory)] TJ 0 -20 Td [(fin) 278] TJ [(ancial assets 123)] TJ ET"
+    )
+    page[NameObject("/Contents")] = stream
+    for _ in range(form_depth):
+        form = DecodedStreamObject()
+        contents = page.get_contents()
+        assert contents is not None
+        form.set_data(contents.get_data())
+        form[NameObject("/Type")] = NameObject("/XObject")
+        form[NameObject("/Subtype")] = NameObject("/Form")
+        form[NameObject("/BBox")] = ArrayObject([NumberObject(n) for n in (0, 0, 612, 792)])
+        form[NameObject("/Resources")] = page["/Resources"]
+        page[NameObject("/Resources")] = DictionaryObject({
+            NameObject("/XObject"): DictionaryObject({NameObject("/Canvas"): writer._add_object(form)})
+        })
+        invocation = DecodedStreamObject()
+        invocation.set_data(b"q 1 0 0 1 0 0 cm /Canvas Do Q")
+        page[NameObject("/Contents")] = invocation
+    output = io.BytesIO()
+    writer.write(output)
+    raw = output.getvalue()
+    pages = parse_pdf_document(PDFDocumentInput(document_id="form-fonts", content=raw))
+    assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == ["regulatory", "financial", "assets", "123"]
+    assert len(pages) == 2 and pages[1].text == ""
+    assert pages[0].document_sha256 == hashlib.sha256(raw).hexdigest()
