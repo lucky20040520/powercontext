@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - src/powercontext/sources/pdf_pages.py
+      - src/powercontext/builtin/artifacts/memory/canonical.py
+      - src/powercontext/builtin/artifacts/memory/service.py
       - tests/test_pdf_pages.py
       - tests/e2e/test_pdf_page_retrieval.py
       - competition/**
@@ -43,6 +45,14 @@ jobs:
             /selftest/challenges/source-03-pdf-retrieval/acceptance \
             /pdf-tests/test_pdf_pages.py \
             /pdf-tests/test_pdf_page_retrieval.py
+
+      - name: Verify all published challenge contracts offline
+        env:
+          POWERCONTEXT_CANDIDATE: ${{ github.workspace }}
+        run: |
+          docker compose -f competition/compose.yaml run --rm \
+            selftest python -m pytest -q -s \
+            -c /selftest/pytest.ini --confcutdir=/selftest /selftest/challenges
 
       - name: Prepare original PDFs for the independent relevance audit
         run: >-

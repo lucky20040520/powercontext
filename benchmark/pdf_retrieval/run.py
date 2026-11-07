@@ -64,13 +64,18 @@ async def _evaluate(manifest: dict[str, Any], directory: Path, minimum: float) -
     persist = importlib.import_module("selftest_support.source_acceptance").persist
     registry = SourceDefinitionRegistry((PDF_PAGE_SOURCE_DEFINITION,))
     observations = []
+    maximum_page_bytes = 0
     started = time.monotonic()
     for document in manifest["documents"]:
         content = (directory / document["file"]).read_bytes()
         _require(hashlib.sha256(content).hexdigest() == document["sha256"], "Original PDF digest mismatch")
         pages = parse_pdf_document(PDFDocumentInput(document_id=document["document_id"], content=content))
         _require(len(pages) == len(document["independent_term_counts"]), "Physical-page coverage mismatch")
+        document_page_bytes = 0
         for page, expected_count in zip(pages, document["independent_term_counts"], strict=True):
+            document_page_bytes = max(
+                document_page_bytes, len(f"{page.document_id}\n{page.text}".strip().encode("utf-8"))
+            )
             terms = Counter(re.findall(r"[a-z]+|\d+", page.text.lower()))
             count = terms.total()
             reference_terms = document.get("independent_page_tokens", {}).get(str(page.page_number))
@@ -84,7 +89,15 @@ async def _evaluate(manifest: dict[str, Any], directory: Path, minimum: float) -
             )
             source = await registry.resolve(page)
             observations.append(project_source_for_transport(registry, source))
-        print(json.dumps({"parsed_original_pdf": document["document_id"], "physical_pages": len(pages)}), flush=True)
+        maximum_page_bytes = max(maximum_page_bytes, document_page_bytes)
+        print(
+            json.dumps({
+                "parsed_original_pdf": document["document_id"],
+                "physical_pages": len(pages),
+                "maximum_page_utf8_bytes": document_page_bytes,
+            }),
+            flush=True,
+        )
     parsing_seconds = time.monotonic() - started
     with tempfile.TemporaryDirectory(prefix="pdf-relevance-") as work:
         started = time.monotonic()
@@ -125,6 +138,7 @@ async def _evaluate(manifest: dict[str, Any], directory: Path, minimum: float) -
         "kind": "independent benchmark, not official gold or platform recall",
         "documents": len(manifest["documents"]),
         "physical_pages": len(observations),
+        "maximum_page_utf8_bytes": maximum_page_bytes,
         "parsing_seconds": parsing_seconds,
         "persistence_seconds": persistence_seconds,
         "maximum_query_seconds": max(case["seconds"] for case in results),
@@ -155,4 +169,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as error:
+        # Public check annotations expose the failing gate without requiring
+        # authenticated log access. Preserve the traceback and failing exit.
+        message = str(error).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        print(f"::error title=Independent PDF audit::{type(error).__name__}: {message}", flush=True)
+        raise

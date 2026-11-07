@@ -576,3 +576,37 @@ def test_disclosure_evidence_survives_distinct_narrative_sections(
             assert len({entry.sources[0].source_id for entry in restored}) == len(restored)
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "paragraph", ["Revenue and assets 123. " * 600, "财报正文与数字123。" * 1000], ids=["ascii", "utf8"]
+)
+def test_complete_dense_page_exceeding_eight_kib_survives_capture_and_restart(tmp_path: Path, paragraph: str) -> None:
+    from powercontext.builtin.artifacts.memory.errors import InvalidMemoryCandidateError
+
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'dense.db'}"))
+    text = paragraph + "\nFinal disclosure: unusual warranty obligation 987654321."
+    assert len(text.encode("utf-8")) > 8192
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, [("ORION_2025_10K", text)])
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, "What unusual warranty obligation did Orion disclose?", limit=20)
+            assert len(citations) == 1
+            record = await memory.get(GetMemoryEntryRequest(citation=citations[0]))
+            assert record.entry.text == f"ORION_2025_10K\n{text}"
+            assert record.entry.sources[0].source_type == "pdf-page"
+            # Ordinary, unbacked memories retain their documented 8 KiB bound.
+            with pytest.raises(InvalidMemoryCandidateError, match="8192 UTF-8 bytes"):
+                await memory.remember(RememberMemoryRequest(entries=(MemoryEntryInput(kind="note", text=text),)))
+            with pytest.raises(InvalidMemoryCandidateError, match="8192 UTF-8 bytes"):
+                await memory.remember(
+                    RememberMemoryRequest(entries=(MemoryEntryInput(kind="note", text=text, entry=record.entry),))
+                )
+        async with open_builtin_runtime(config) as runtime:
+            restored = await runtime.memory.for_scope(scope_id).get(GetMemoryEntryRequest(citation=citations[0]))
+            assert restored.citation == citations[0]
+            assert restored.entry.text == f"ORION_2025_10K\n{text}"
+
+    asyncio.run(run())

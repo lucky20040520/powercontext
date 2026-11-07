@@ -1656,7 +1656,7 @@ class MemoryService:
         try:
             return self._entry_material(
                 kind=candidate.kind,
-                text=candidate.text,
+                text=self._normalize_candidate_text(candidate.text, candidate_sources, candidate_source_refs),
                 sources=sources,
                 artifacts=artifacts,
             )
@@ -1666,6 +1666,17 @@ class MemoryService:
                 str(error),
                 canonical_code=canonical_error_code(error),
             ) from error
+
+    def _normalize_candidate_text(self, text: str, sources: Sequence[Source], references: Sequence[SourceRef]) -> str:
+        refs = tuple(reference.model_dump(mode="json") for reference in references)
+        normalized = normalize_text(text, source_refs=refs)
+        if len(normalized.encode("utf-8")) > 8192:
+            # A source-backed page is an exact capture, not a way to enlarge
+            # ordinary notes or revisions merely retaining an old PDF reference.
+            content = _source_gate_content(sources[0], self._source_resolver)
+            if content is None or normalized != normalize_text(content, source_refs=refs):
+                return normalize_text(text)
+        return normalized
 
     async def _canonical_candidate_sources(
         self,
@@ -1717,11 +1728,11 @@ class MemoryService:
         artifacts: Sequence[ArtifactRef],
     ) -> _EntryMaterial:
         normalized_kind = normalize_kind(kind)
-        normalized_text = normalize_text(text)
         canonical_sources = _canonical_source_refs(sources)
         canonical_artifacts = _canonical_artifact_refs(artifacts)
         source_refs = tuple(source.model_dump(mode="json") for source in canonical_sources)
         artifact_refs = tuple(artifact.model_dump(mode="json") for artifact in canonical_artifacts)
+        normalized_text = normalize_text(text, source_refs=source_refs)
         content_bytes = entry_content_bytes(
             kind=normalized_kind,
             text=normalized_text,

@@ -143,3 +143,11 @@ The workflow additionally captures eleven complete original reports (2,352 pages
 checks independent term counts and selected whole-page token F1, then runs the
 40-case benchmark in the official offline container. The fixtures and evaluation
 script are outside `src/` and never participate in assessed parsing or retrieval.
+
+
+Complete dense PDF pages may exceed Memory's ordinary 8,192-byte body ceiling.
+Only entries backed by exactly one validated `pdf-page` Source use the existing
+captured-Source byte budget instead. The same rule applies to write validation,
+canonical content hashes and persisted-version rebuilding, so restarting does not
+make a long page unreadable. Ordinary entries retain the 8 KiB contract and errors.
+The raw page is never truncated or split to fit an ordinary note limit.

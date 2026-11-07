@@ -48,3 +48,9 @@ original PDF bytes, not from the FinanceBench answer or evidence files.
 
 Exact single-character overprinting at identical explicitly reset coordinates is
 counted once. Repeated text that advances normally is retained.
+
+Dense pages exercise the real Memory storage path above the ordinary 8 KiB note
+limit. Parsing logs report the largest UTF-8 page size per document. Single-page
+PDF evidence uses the bounded captured-Source budget without truncation; ordinary
+Memory entries keep their existing limit. Hashing and restart validation use the
+same reference-aware rule.
