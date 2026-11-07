@@ -172,3 +172,8 @@ Nonpositive font sizes retain complete logical plain text because layout sorting
 is not faithful for those runs. Arithmetic failure in optional layout geometry
 also falls back to successfully extracted text; structural and stream errors
 still fail the complete PDF atomically.
+
+Before extracting page text, every Pages branch resolves its legal indirect values
+and validates its declared integer Count against all descendant leaves. Cyclic
+trees, invalid root nodes and inconsistent nested counts fail atomically. Legal
+indirect Count and Kids objects retain the original physical page order.

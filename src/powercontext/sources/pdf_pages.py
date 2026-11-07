@@ -105,13 +105,13 @@ def parse_pdf_document(value: PDFDocumentInput) -> tuple[PDFPageInput, ...]:
     """
 
     from pypdf import PdfReader
-    from pypdf.generic import DictionaryObject
 
     digest = hashlib.sha256(value.content).hexdigest()
     try:
         reader = PdfReader(io.BytesIO(value.content), strict=True)
         if reader.is_encrypted and not reader.decrypt(""):
             raise ValueError("PDF requires a non-empty password")  # noqa: TRY003, TRY301
+        expected_pages = _page_tree_count(reader.root_object["/Pages"], set())
         # Materialize before returning: an error on a later page cannot expose
         # an apparently successful partial document to ingestion.
         pages = tuple(
@@ -123,14 +123,40 @@ def parse_pdf_document(value: PDFDocumentInput) -> tuple[PDFPageInput, ...]:
             )
             for index, page in enumerate(reader.pages, 1)
         )
-        root = reader.root_object["/Pages"].get_object()
-        if not isinstance(root, DictionaryObject) or len(pages) != root.get("/Count"):
+        if len(pages) != expected_pages:
             raise ValueError("PDF page tree does not contain its declared pages")  # noqa: TRY003, TRY301
     except Exception as error:
         # pypdf also surfaces malformed objects as built-in exceptions. At this
         # input boundary all failures mean that the complete document is invalid.
         raise ValueError("Unable to completely parse PDF document") from error  # noqa: TRY003
     return pages
+
+
+def _page_tree_count(reference: object, active: set[int]) -> int:
+    """Validate every branch count, resolving legal indirect page-tree values."""
+    from pypdf.generic import ArrayObject, DictionaryObject, NumberObject, PdfObject
+
+    node = reference.get_object() if isinstance(reference, PdfObject) else reference
+    if not isinstance(node, DictionaryObject) or id(node) in active:
+        raise ValueError("PDF page tree is invalid or cyclic")  # noqa: TRY003
+    kind = node.get("/Type")
+    if isinstance(kind, PdfObject):
+        kind = kind.get_object()
+    if kind == "/Page" and active:
+        return 1
+    if kind != "/Pages":
+        raise ValueError("PDF page tree contains an invalid node")  # noqa: TRY003
+    count, kids = node.get("/Count"), node.get("/Kids")
+    count = count.get_object() if isinstance(count, PdfObject) else count
+    kids = kids.get_object() if isinstance(kids, PdfObject) else kids
+    if not isinstance(count, NumberObject) or count < 0 or not isinstance(kids, ArrayObject):
+        raise ValueError("PDF page tree must declare an integer count and child array")  # noqa: TRY003
+    active.add(id(node))
+    actual = sum(_page_tree_count(child, active) for child in kids)
+    active.remove(id(node))
+    if actual != count:
+        raise ValueError("PDF page tree branch does not contain its declared pages")  # noqa: TRY003
+    return actual
 
 
 def _extract_page_text(page: PageObject) -> str:

@@ -386,3 +386,58 @@ def test_nonpositive_text_size_preserves_complete_logical_words(size: int) -> No
     assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == ["regulatory"]
     assert len(pages) == 2 and pages[1].text == ""
     assert pages[0].document_sha256 == hashlib.sha256(raw).hexdigest()
+
+
+@pytest.mark.parametrize("indirect", [False, True])
+def test_nested_page_tree_resolves_counts_and_preserves_physical_order(indirect: bool) -> None:
+    raw = _nested_page_tree(count=2, indirect=indirect)
+    pages = parse_pdf_document(PDFDocumentInput(document_id="page-tree", content=raw))
+    assert [page.page_number for page in pages] == [1, 2]
+    assert "Revenue 2025 1,234.56" in pages[0].text and pages[1].text == ""
+    assert all(page.document_sha256 == hashlib.sha256(raw).hexdigest() for page in pages)
+
+
+@pytest.mark.parametrize("count", [None, 1, 3])
+def test_inconsistent_nested_page_tree_fails_atomically(count: int | None) -> None:
+    with pytest.raises(ValueError):
+        parse_pdf_document(PDFDocumentInput(document_id="bad-page-tree", content=_nested_page_tree(count=count)))
+
+
+def _nested_page_tree(*, count: int | None, indirect: bool = False) -> bytes:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    root = writer._root_object["/Pages"]
+    assert isinstance(root, DictionaryObject)
+    original_children = root["/Kids"]
+    assert isinstance(original_children, ArrayObject)
+    branch = DictionaryObject({
+        NameObject("/Type"): NameObject("/Pages"),
+        NameObject("/Kids"): ArrayObject(original_children),
+        NameObject("/Parent"): writer._root_object.raw_get("/Pages"),
+    })
+    if count is not None:
+        branch[NameObject("/Count")] = writer._add_object(NumberObject(count)) if indirect else NumberObject(count)
+    reference = writer._add_object(branch)
+    for child in original_children:
+        child.get_object()[NameObject("/Parent")] = reference
+    children = ArrayObject([reference])
+    root[NameObject("/Kids")] = writer._add_object(children) if indirect else children
+    if indirect:
+        root[NameObject("/Count")] = writer._add_object(NumberObject(2))
+    output = io.BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+
+def test_page_tree_catalog_cannot_point_directly_to_a_page() -> None:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    root = writer._root_object["/Pages"]
+    assert isinstance(root, DictionaryObject)
+    children = root["/Kids"]
+    assert isinstance(children, ArrayObject)
+    writer._root_object[NameObject("/Pages")] = children[0]
+    output = io.BytesIO()
+    writer.write(output)
+    with pytest.raises(ValueError):
+        parse_pdf_document(PDFDocumentInput(document_id="invalid-root", content=output.getvalue()))
