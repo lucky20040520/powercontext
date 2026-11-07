@@ -533,7 +533,42 @@ async def search_pdf_pages(
     if not records:
         return ()
     components = tuple(dict.fromkeys(phrase for metric in _matched_metrics(_tokens(question)) for phrase in metric))
-    return _rank_pages(_select_reports(records, question), terms, phrases, limit, components=components)
+    records = _select_reports(records, question)
+    terms, phrases = _page_query(records, question, terms, phrases)
+    return _rank_pages(records, terms, phrases, limit, components=components)
+
+
+def _page_query(
+    records: list[MemoryEntryRecord],
+    question: str,
+    terms: dict[str, float],
+    phrases: tuple[tuple[str, ...], ...],
+) -> tuple[dict[str, float], tuple[tuple[str, ...], ...]]:
+    """Separate a report selector from the subject of its evidence pages.
+
+    Company names and fiscal years select reports, but their repetition in
+    running headers and narrative is not evidence about the requested metric.
+    Only remove company words when the question actually names that identity;
+    arbitrary document IDs must not suppress otherwise useful subject words.
+    """
+
+    question_words = set(_tokens(question))
+    selectors = set(_REPORT_YEAR.findall(question))
+    for document in {record.entry.text.partition("\n")[0] for record in records}:
+        company_part = _REPORT_YEAR.split(document, maxsplit=1)[0]
+        company_words = {
+            word
+            for word in _IDENTITY_WORDS.findall(company_part.lower())
+            if word not in _REPORT_SUFFIXES and word not in {"and", "the"} and not word.isdigit()
+        }
+        normalized_company = set(_tokens(" ".join(company_words)))
+        if normalized_company and normalized_company <= question_words:
+            selectors.update(normalized_company)
+    focused = {term: weight for term, weight in terms.items() if term not in selectors}
+    # Identity-only searches retain their original behavior.
+    if not focused:
+        return terms, phrases
+    return focused, tuple(phrase for phrase in phrases if not selectors.intersection(phrase))
 
 
 def _select_reports(records: list[MemoryEntryRecord], question: str) -> list[MemoryEntryRecord]:

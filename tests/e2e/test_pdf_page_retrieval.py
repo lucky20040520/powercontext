@@ -483,3 +483,45 @@ def test_pdf_search_normalizes_typography_without_rewriting_captured_text(
             assert entry.entry.text == f"ORION_2025_10K\n{text}"
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("question", "mention", "evidence"),
+    [
+        (
+            "What countries does Orion operate in as of 2025?",
+            "countries",
+            "Net revenue by country\nUnited States 100 Germany 40 Japan 30.",
+        ),
+        (
+            "What was Orion research and development expense in 2025?",
+            "research development",
+            "Consolidated Statements of Operations\nResearch and development 120.\n"
+            + "Sales 1000 Interest 10 Taxes 20 " * 40,
+        ),
+    ],
+    ids=["country-disclosure", "research-expense"],
+)
+def test_report_selectors_do_not_crowd_out_evidence_in_distinct_sections(
+    tmp_path: Path, question: str, mention: str, evidence: str
+) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'selectors.db'}"))
+    # Different sections have independent vocabularies, so duplicate-page
+    # diversification cannot compensate for ranking the company/year as evidence.
+    pages = []
+    for number in range(30):
+        vocabulary = " ".join(f"topic{chr(97 + number)}{chr(97 + word)}" for word in range(26))
+        pages.append(("ORION_2025_10K", f"Orion 2025 {mention} " + (vocabulary + " ") * 10))
+    pages.append(("ORION_2025_10K", evidence))
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, question, limit=20)
+            assert 0 < len(citations) <= 20
+            restored = [(await memory.get(GetMemoryEntryRequest(citation=item))).entry for item in citations]
+            assert any(entry.text == f"ORION_2025_10K\n{evidence}".strip() for entry in restored)
+            assert len({entry.sources[0].source_id for entry in restored}) == len(restored)
+
+    asyncio.run(run())
