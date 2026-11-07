@@ -441,8 +441,58 @@ def test_comparison_keeps_each_named_company_when_one_lacks_matching_report_year
             "Restructuring costs are subject to estimates and plans may change in future periods.",
             ("2025 Restructur-\ning costs 17.",),
         ),
+        (
+            "Is Orion a capital-intensive business based on FY2025 data?",
+            "Capital allocation remains an important part of our long-term business strategy. " * 8,
+            (
+                "Consolidated Statements of Income\n2025 Net sales 1000 Operating expenses 800.",
+                "Consolidated Balance Sheets\n2025 Property, plant and equipment, net 250.",
+                "Consolidated Statements of Cash Flows\n2025 Purchases of property, plant and equipment 80.",
+            ),
+        ),
+        (
+            "If we exclude M&A, which segment dragged down Orion's growth in 2025?",
+            "Acquisition and divestiture activity remain under review. " * 8,
+            (
+                "Worldwide Sales Change by Business Segment\n"
+                "Organic sales 1%; Acquisitions 0%; Divestitures (2%); Translation (4%); Total sales change (5%).",
+            ),
+        ),
+        (
+            "Do any product or service categories represent more than 20% of Orion revenue in 2025?",
+            "Product and service categories are discussed throughout our business review. " * 8,
+            (
+                "Summary of Business Segment Data\n"
+                "Revenues: Commercial Systems 30, Government Services 25, Total revenues 100.",
+            ),
+        ),
+        (
+            "Who are Orion's primary customers in 2025?",
+            "Our customers support demand for products and services across several markets. " * 8,
+            (
+                "We derive a significant portion of revenue from commercial airlines.",
+                "We derive a substantial portion of revenue from the U.S. government and Department of Defense.",
+                "In 2025, 40% of revenues were earned under U.S. government contracts.",
+            ),
+        ),
+        (
+            "Is Orion's business subject to cyclicality?",
+            "Economic conditions may affect demand, financing and future investment. " * 8,
+            ("Historically, the airline industry has been cyclical and highly competitive.",),
+        ),
     ],
-    ids=["cash-ratio-components", "net-debt-components", "ratio-acronym", "pdf-ligature", "pdf-line-wrap"],
+    ids=[
+        "cash-ratio-components",
+        "net-debt-components",
+        "ratio-acronym",
+        "pdf-ligature",
+        "pdf-line-wrap",
+        "capital-intensive",
+        "m-and-a-segment-growth",
+        "product-category-revenue",
+        "primary-customers",
+        "cyclicality",
+    ],
 )
 def test_supporting_pages_survive_discussion_distractors_after_restart(
     tmp_path: Path, question: str, discussion: str, evidence: tuple[str, ...]

@@ -93,6 +93,19 @@ def test_full_text_numbers_blanks_and_source_roundtrip() -> None:
     }
 
 
+def test_indirect_page_count_is_a_valid_complete_document() -> None:
+    writer = PdfWriter()
+    writer.add_blank_page(width=100, height=200)
+    writer.add_blank_page(width=100, height=200)
+    root = writer.root_object["/Pages"].get_object()
+    assert isinstance(root, DictionaryObject)
+    root[NameObject("/Count")] = writer._add_object(NumberObject(2))
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    pages = parse_pdf_document(PDFDocumentInput(document_id="indirect-count", content=buffer.getvalue()))
+    assert [(page.page_number, page.text) for page in pages] == [(1, ""), (2, "")]
+
+
 @pytest.mark.parametrize("algorithm", ["RC4-128", "AES-128", "AES-256"])
 def test_empty_password_permission_pdf_preserves_text(algorithm: str) -> None:
     raw = _document(password="", algorithm=algorithm)

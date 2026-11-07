@@ -119,7 +119,10 @@ def parse_pdf_document(value: PDFDocumentInput) -> tuple[PDFPageInput, ...]:
             for index, page in enumerate(reader.pages, 1)
         )
         root = reader.root_object["/Pages"].get_object()
-        if not isinstance(root, DictionaryObject) or len(pages) != root.get("/Count"):
+        root_count = root.get("/Count") if isinstance(root, DictionaryObject) else None
+        if hasattr(root_count, "get_object"):
+            root_count = root_count.get_object()
+        if not isinstance(root, DictionaryObject) or len(pages) != root_count:
             raise ValueError("PDF page tree does not contain its declared pages")  # noqa: TRY003, TRY301
     except Exception as error:
         # pypdf also surfaces malformed objects as built-in exceptions. At this
@@ -419,8 +422,11 @@ _INFLECTIONS = {
     "amortisation": "amortization",
     "capitalisation": "capitalization",
     "taxation": "tax",
+    "cyclicality": "cyclical",
+    "cyclical": "cyclical",
 }
 _LINE_WRAP = re.compile(r"([a-z]+)[-\u00ad][ \t]*\r?\n[ \t]*([a-z]+)")
+_M_AND_A_MENTION = re.compile(r"\bm\s*&\s*a\b", re.IGNORECASE)
 
 
 def _word_form(word: str) -> str:
@@ -483,7 +489,7 @@ _CONCEPTS = (
     ("restructuring", "reorganization", "realignment", "severance"),
     ("revenue", "sale", "turnover"),
     ("income", "earning", "profit"),
-    ("capex", "capital spending", "capital expenditure", "property plant equipment"),
+    ("capex", "capital spending", "capital expenditure", "capital intensive", "property plant equipment"),
     ("cash flow", "cash flows", "cash provided", "cash used"),
     ("income statement", "p l statement", "statement of income", "statement of operation", "statement of earning"),
     ("balance sheet", "financial position"),
@@ -503,6 +509,13 @@ _CONCEPTS = (
     ("online", "ecommerce", "e commerce", "digital commerce"),
     ("geographic", "foreign revenue", "foreign customer", "overseas", "outside the united states", "non us"),
     ("maturity", "maturities", "fall due", "scheduled payment", "future minimum payment", "payment schedule"),
+    (
+        "product category",
+        "service category",
+        "business segment data",
+        "segment revenue",
+        "revenue by segment",
+    ),
 )
 # Metric names expand toward their supporting statement lines. The reverse
 # direction would turn an ordinary revenue question into many unrelated ratios.
@@ -590,6 +603,11 @@ _STATEMENT_HEADINGS = (
         ),
     ),
 )
+_COMPONENT_STATEMENT_HEADINGS = {
+    "statement of income": _STATEMENT_HEADINGS[0][1],
+    "cash flow": _STATEMENT_HEADINGS[1][1],
+    "balance sheet": _STATEMENT_HEADINGS[2][1],
+}
 _BUSINESS_HEADING = re.compile(
     r"^\s*(?:item\s+\d+[a-z]?\.?\s*)?(?:our\s+(?:company|business|divisions?)|business|"
     r"(?:geographic|reportable|operating)\s+segments?)\s*[.:]?\s*$",
@@ -623,6 +641,7 @@ _GEOGRAPHIC_HEADING = re.compile(
 _CUSTOMER_FOCUS = frozenset({
     "single",
     "individual",
+    "primary",
     "major",
     "significant",
     "largest",
@@ -659,12 +678,26 @@ def _supporting_components(question: str) -> tuple[str, ...]:
     }
     if geographic and tokens & {"revenue", "sale", "asset", "operation", "operate", "geography", "country"}:
         components.extend(("geographic revenue", "geographic asset" if "asset" in tokens else "geographic segment"))
+    if {"capital", "intensive"} <= tokens:
+        components.extend((
+            "capital expenditure",
+            "property plant equipment",
+            "statement of income",
+            "balance sheet",
+            "cash flow",
+        ))
+    if _M_AND_A_MENTION.search(question) and tokens & {"segment", "growth"}:
+        components.extend(("organic sales", "acquisition", "divestiture", "translation", "total sales change"))
+    if tokens & {"product", "service"} and tokens & {"category", "revenue", "segment"}:
+        components.extend(("business segment data", "segment revenue", "revenue by segment"))
     if tokens & {"lease", "rental", "rent"} and (
         tokens & {"maturity", "due", "scheduled", "future"} or "fall due" in question.lower()
     ):
         components.extend(("lease liability maturity", "future minimum lease payment"))
     if tokens & {"customer", "buyer", "client"} and tokens & _CUSTOMER_FOCUS:
         components.append("customer concentration")
+        if tokens & {"primary", "largest"}:
+            components.extend(("commercial airline", "u s government", "government contract", "defense department"))
     if "pension" in tokens and tokens & {"invested", "investment", "allocation", "bond", "security"}:
         components.append("pension asset allocation")
     # Components describe evidence, never report identities or fiscal headers.
@@ -858,15 +891,15 @@ def _rank_pages(
     """Fuse page, literal-query and local-passage rankings of the same snapshot."""
 
     bodies = [record.entry.text.partition("\n")[2] for record in records]
-    component_queries = [
-        (
+    component_queries: list[tuple[str, dict[str, float], tuple[tuple[str, ...], ...]]] = []
+    for component in components:
+        query, component_phrases = (
             (dict.fromkeys(_tokens(component), 1.0), (tuple(_tokens(component)),))
             if component.startswith("geographic ")
             else _query_terms(component)
         )
-        for component in components
-    ]
-    indexed_terms = set(terms).union(*(query.keys() for query, _ in component_queries))
+        component_queries.append((component, query, component_phrases))
+    indexed_terms = set(terms).union(*(query.keys() for _, query, _ in component_queries))
     token_lists = [_tokens(body, indexed_terms) for body in bodies]
     counts = [Counter(tokens) for tokens in token_lists]
     frequency = Counter(token for count in counts for token in count)
@@ -916,11 +949,16 @@ def _rank_pages(
         )
         if passage_score > 0:
             rankings[2].append((passage_score, index))
-        for component_ranking, (query, component_phrases) in zip(component_rankings, component_queries, strict=True):
+        for component_ranking, (component, query, component_phrases) in zip(
+            component_rankings, component_queries, strict=True
+        ):
             component_score = _bm25(count, len(tokens), query, idf, average_length)
             if component_score <= 0:
                 continue
             component_score += _evidence_bonus(body, query, idf)
+            heading = _COMPONENT_STATEMENT_HEADINGS.get(component)
+            if heading is not None and heading.search(body[:2000]):
+                component_score += 3.0 * sum(idf.get(term, 0.0) for term in query)
             component_score += sum(
                 0.6 * sum(idf.get(term, 0.0) for term in phrase)
                 for phrase in component_phrases
