@@ -255,6 +255,7 @@ class _TextRunNormalizer:
         self.cross_run_kerning = False
         self.joined_glyphs = 0
         self.text_characters = 0
+        self.layout_reliable = True
         self.positioned = True
         self.font: tuple[Any, ...] = ()
         self.fonts: list[tuple[Any, ...]] = []
@@ -309,6 +310,8 @@ class _TextRunNormalizer:
         if operator not in (b"Tj", b"TJ") or not operands:
             return
         glyphs = operands[0] if operator == b"Tj" else (operands[0][0] if len(operands[0]) == 1 else None)
+        if self.font and float(self.font[1]) <= 0:
+            self.layout_reliable = False
         # Repeated implicit text advances are real repetitions. Require an
         # explicit placement and an exact single-glyph match at that location.
         if self.positioned and isinstance(glyphs, (str, bytes)) and len(glyphs) == 1:
@@ -331,6 +334,8 @@ def _extract_complete_text(page: PageObject, *, prefer_layout: bool = False) -> 
 
     normalizer = _TextRunNormalizer(page)
     coalesced = page.extract_text(visitor_operand_before=normalizer.before, visitor_operand_after=normalizer.after)
+    if not normalizer.layout_reliable:
+        return coalesced
     # Glyph-wise TJ encoding can fragment words across independently placed
     # runs even when coalescing leaves plain extraction unchanged. Its density
     # distinguishes that producer pattern from ordinary word-level kerning.
@@ -341,9 +346,14 @@ def _extract_complete_text(page: PageObject, *, prefer_layout: bool = False) -> 
         plain = page.extract_text()
         if Counter(_WORDS.findall(plain.lower())) == Counter(_WORDS.findall(coalesced.lower())):
             return plain
-    layout = page.extract_text(
-        extraction_mode="layout", layout_mode_space_vertically=False, layout_mode_strip_rotated=False
-    )
+    try:
+        layout = page.extract_text(
+            extraction_mode="layout", layout_mode_space_vertically=False, layout_mode_strip_rotated=False
+        )
+    except ArithmeticError:
+        # Layout is an optional spacing repair. Degenerate but legal text
+        # geometry must not invalidate an already completely extracted page.
+        return _repair_mixed_form_text(page, coalesced)
     if Counter(character for character in layout if not character.isspace()) != Counter(
         character for character in coalesced if not character.isspace()
     ):

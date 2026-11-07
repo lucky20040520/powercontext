@@ -167,3 +167,8 @@ For mixed pages, if whole-page layout cannot preserve all characters, used Forms
 are repaired with their local fonts. Only exact unambiguous extracted spans are
 replaced, with non-whitespace characters preserved. Surrounding page text and
 repeated painted occurrences remain intact, including colliding font names.
+
+Nonpositive font sizes retain complete logical plain text because layout sorting
+is not faithful for those runs. Arithmetic failure in optional layout geometry
+also falls back to successfully extracted text; structural and stream errors
+still fail the complete PDF atomically.

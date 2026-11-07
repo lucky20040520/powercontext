@@ -370,3 +370,19 @@ def test_mixed_page_and_form_fonts_preserve_all_painted_text(copies: int) -> Non
     )
     assert len(pages) == 2 and pages[1].text == ""
     assert pages[0].document_sha256 == hashlib.sha256(raw).hexdigest()
+
+
+@pytest.mark.parametrize("size", [0, -12])
+def test_nonpositive_text_size_preserves_complete_logical_words(size: int) -> None:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    contents = DecodedStreamObject()
+    contents.set_data(f"BT /F1 {size} Tf 50 700 Td [(Reg) 3 (ulatory)] TJ ET".encode())
+    writer.pages[0][NameObject("/Contents")] = contents
+    output = io.BytesIO()
+    writer.write(output)
+    raw = output.getvalue()
+    pages = parse_pdf_document(PDFDocumentInput(document_id="nonpositive-font", content=raw))
+    assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == ["regulatory"]
+    assert len(pages) == 2 and pages[1].text == ""
+    assert pages[0].document_sha256 == hashlib.sha256(raw).hexdigest()
