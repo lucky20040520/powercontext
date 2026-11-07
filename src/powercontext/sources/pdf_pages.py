@@ -168,10 +168,42 @@ def _coalesce_kerning(items: list[Any]) -> list[Any]:
     return output
 
 
+def _font_aliases(page: PageObject) -> dict[str, str]:
+    """Recognize exact duplicate font dictionaries without guessing encodings."""
+
+    from pypdf.generic import DictionaryObject
+
+    resources = page.get("/Resources")
+    if resources is None:
+        return {}
+    resources = resources.get_object()
+    if not isinstance(resources, DictionaryObject):
+        return {}
+    fonts = resources.get("/Font")
+    if fonts is None:
+        return {}
+    fonts = fonts.get_object()
+    if not isinstance(fonts, DictionaryObject):
+        return {}
+    aliases: dict[str, str] = {}
+    unique: list[tuple[str, object]] = []
+    for name, reference in fonts.items():
+        value = reference.get_object()
+        for canonical, known in unique:
+            if value == known:
+                aliases[name] = canonical
+                break
+        else:
+            aliases[name] = name
+            unique.append((name, value))
+    return aliases
+
+
 class _TextRunNormalizer:
     """Normalize horizontal runs and exact, explicitly positioned overprinting."""
 
-    def __init__(self) -> None:
+    def __init__(self, page: PageObject) -> None:
+        self.aliases = _font_aliases(page)
         self.rewritten = False
         self.positioned = True
         self.font: tuple[Any, ...] = ()
@@ -202,7 +234,8 @@ class _TextRunNormalizer:
         elif operator == b"Q" and self.fonts:
             self.font = self.fonts.pop()
         elif operator == b"Tf":
-            self.font = tuple(operands)
+            name = str(operands[0])
+            self.font = (self.aliases.get(name, name), *operands[1:])
         elif operator in (b"BT", b"Tm", b"Td", b"TD", b"T*"):
             self.positioned = True
 
@@ -232,7 +265,7 @@ def _extract_complete_text(page: PageObject) -> str:
     original extraction and table tokens. No content crosses a page boundary.
     """
 
-    normalizer = _TextRunNormalizer()
+    normalizer = _TextRunNormalizer(page)
     coalesced = page.extract_text(visitor_operand_before=normalizer.before, visitor_operand_after=normalizer.after)
     if not normalizer.rewritten:
         return coalesced

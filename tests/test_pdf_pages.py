@@ -252,9 +252,17 @@ def test_small_horizontal_kerning_preserves_complete_words_and_table_numbers() -
 def test_exact_glyph_overprinting_does_not_duplicate_words_or_remove_real_repetitions() -> None:
     writer = PdfWriter()
     writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
-    operations = [b"BT /F1 12 Tf"]
+    resources = writer.pages[0]["/Resources"].get_object()
+    assert isinstance(resources, DictionaryObject)
+    font_resources = resources["/Font"].get_object()
+    assert isinstance(font_resources, DictionaryObject)
+    font = font_resources["/F1"].get_object()
+    assert isinstance(font, DictionaryObject)
+    font_resources[NameObject("/F2")] = DictionaryObject(font)
+    operations = [b"BT"]
     widths = {"R": 722, "e": 556, "v": 500, "n": 556, "u": 556}
-    for _ in range(2):
+    for font_name in ("F1", "F2"):
+        operations.append(f"/{font_name} 12 Tf".encode())
         position = 50.0
         for character in "Revenue":
             operations.append(f"1 0 0 1 {position:.3f} 700 Tm ({character}) Tj".encode())
