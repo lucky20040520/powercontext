@@ -1,0 +1,44 @@
+name: PDF page evidence acceptance
+
+on:
+  push:
+    paths:
+      - src/powercontext/sources/pdf_pages.py
+      - tests/test_pdf_pages.py
+      - tests/e2e/test_pdf_page_retrieval.py
+      - competition/**
+      - .github/workflows/pdf-page-evidence.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pdf-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Build the official fixed-dependency environment
+        run: docker compose -f competition/compose.yaml build selftest
+
+      - name: Verify PDF behavior offline with one CPU and two GiB
+        env:
+          POWERCONTEXT_CANDIDATE: ${{ github.workspace }}
+        run: |
+          docker compose -f competition/compose.yaml run --rm \
+            -v "$PWD/tests/test_pdf_pages.py:/pdf-tests/test_pdf_pages.py:ro" \
+            -v "$PWD/tests/e2e/test_pdf_page_retrieval.py:/pdf-tests/test_pdf_page_retrieval.py:ro" \
+            selftest python -m pytest -q -s \
+            -c /selftest/pytest.ini --confcutdir=/selftest \
+            /selftest/challenges/source-03-pdf-retrieval/acceptance \
+            /pdf-tests/test_pdf_pages.py \
+            /pdf-tests/test_pdf_page_retrieval.py

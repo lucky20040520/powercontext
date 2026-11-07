@@ -400,3 +400,86 @@ def test_comparison_keeps_each_named_company_when_one_lacks_matching_report_year
             assert documents == {"ACME_2025_10K", "RIVAL_2024_10K"}
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("question", "discussion", "evidence"),
+    [
+        (
+            "What was Orion cash ratio in 2025?",
+            "Cash management supports our liquidity ratio objectives. "
+            "We discuss cash and liquidity policies, financing and future investment plans.",
+            (
+                "Consolidated Balance Sheets\n2025 Cash and cash equivalents 500.",
+                "Consolidated Balance Sheets\n2025 Total current liabilities 250.",
+            ),
+        ),
+        (
+            "What was Orion net debt in 2025?",
+            "Debt maturity and net borrowing objectives remain under review. "
+            "We discuss debt management and financing policies.",
+            (
+                "Consolidated Balance Sheets\n2025 Total debt 900.",
+                "Consolidated Balance Sheets\n2025 Cash and cash equivalents 300.",
+            ),
+        ),
+        (
+            "What was Orion ROA in 2025?",
+            "ROA is one of our performance indicators. Our 2025 performance and future investment are under review.",
+            (
+                "Consolidated Statements of Operations\n2025 Net income 80.",
+                "Consolidated Balance Sheets\n2025 Total assets 1000.",
+            ),
+        ),
+        (
+            "What was Orion net profit in 2025?",
+            "Net income is subject to estimates. Profit expectations are uncertain and may change.",
+            ("Financial results\n2025 Net proﬁt 17.",),
+        ),
+        (
+            "What were Orion restructuring costs in 2025?",
+            "Restructuring costs are subject to estimates and plans may change in future periods.",
+            ("2025 Restructur-\ning costs 17.",),
+        ),
+    ],
+    ids=["cash-ratio-components", "net-debt-components", "ratio-acronym", "pdf-ligature", "pdf-line-wrap"],
+)
+def test_supporting_pages_survive_discussion_distractors_after_restart(
+    tmp_path: Path, question: str, discussion: str, evidence: tuple[str, ...]
+) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'support.db'}"))
+    document = "ORION_2025_10K"
+    pages = [(document, f"Discussion {number}\n2025 {discussion}\n" * 8) for number in range(30)]
+    pages.extend((document, text) for text in evidence)
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, question, limit=20)
+            assert len(citations) <= 20
+            restored = [(await memory.get(GetMemoryEntryRequest(citation=item))).entry for item in citations]
+            assert {f"{document}\n{text}" for text in evidence} <= {entry.text for entry in restored}
+            assert len({entry.sources[0].source_id for entry in restored}) == len(restored)
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "text,topic", [("Proﬁtability 17.", "profitability"), ("Restructur-\ning 17.", "restructuring")]
+)
+def test_pdf_search_normalizes_typography_without_rewriting_captured_text(
+    tmp_path: Path, text: str, topic: str
+) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'typography.db'}"))
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, [("ORION_2025_10K", text)])
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, f"What does Orion say about {topic}?", limit=1)
+            assert len(citations) == 1
+            entry = await memory.get(GetMemoryEntryRequest(citation=citations[0]))
+            assert entry.entry.text == f"ORION_2025_10K\n{text}"
+
+    asyncio.run(run())

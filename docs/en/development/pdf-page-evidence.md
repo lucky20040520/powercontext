@@ -1,18 +1,13 @@
 # PDF page evidence
 
-Install `powercontext[pdf]` to extract text with pypdf. The parser accepts original
-PDF bytes and a nonblank document ID. It returns every physical page in order,
-including blank pages, with 1-based page numbers and the SHA-256 of the complete
-original file. It supports empty-password permissions and rejects documents that
-require a password. Invalid or incompletely readable documents fail with
-`ValueError` before any pages are returned. The parser does not perform OCR on
-scanned pages.
-Flate-encoded page streams are checked for complete compressed data before
-pypdf's best-effort decoder can silently recover a damaged stream. This also
-applies when Flate follows another encoding filter.
-Nested Form XObject text streams receive the same checks, so damaged table or
-body text cannot be silently skipped. Resource traversal tracks visited objects
-to handle cycles; image payloads are outside the text validation path.
+Install `powercontext[pdf]` to extract complete physical pages with pypdf. The
+parser accepts original PDF bytes and a nonblank document ID. It returns all
+pages in order, including blanks, with 1-based page numbers and the SHA-256 of
+the entire original file. Empty-password permissions are supported; documents
+requiring a password are rejected. Invalid or incompletely readable documents
+fail atomically with `ValueError`. Scanned images are not processed with OCR.
+Flate data in page content and nested Form XObjects is checked before the
+extractor can silently recover a damaged text stream.
 
 ```python
 from powercontext.sources.pdf_pages import PDFDocumentInput, parse_pdf_document
@@ -20,19 +15,19 @@ from powercontext.sources.pdf_pages import PDFDocumentInput, parse_pdf_document
 pages = parse_pdf_document(PDFDocumentInput(document_id="annual-report", content=pdf_bytes))
 ```
 
-Register `PDF_PAGE_SOURCE_DEFINITION` in a `SourceDefinitionRegistry`, resolve each
+Register `PDF_PAGE_SOURCE_DEFINITION` in `SourceDefinitionRegistry`, resolve each
 page, and use `project_source_for_transport` to create its observation. Register
 the definition manifest with Runtime ingestion, submit all observations to the
-chosen scope, and flush its Memory with a pipeline preserving each observation's
+chosen scope, and flush Memory with a pipeline preserving each observation's
 complete text and Source reference. The standard `powercontext.text-evidence@1`
-projection contains `document_id + "\n" + page.text`. Its metadata contains exactly
-`document_id`, `document_sha256`, and `page_number`.
+projection contains `document_id + "\n" + page.text`. Its metadata contains
+exactly `document_id`, `document_sha256`, and `page_number`.
 
-Source identities hash an unambiguous encoding of the document ID, original file
-digest, and physical page number. They are bounded to 68 characters and do not
-depend on extracted text. A changed PDF produces new page identities; old Sources
-and Memory citations retain their original revision. PDF physical pages must not
-be confused with printed page labels.
+Source identities hash an unambiguous encoding of the document ID, original
+file digest, and physical page number. They are bounded to 68 characters and do
+not depend on extracted text. A changed PDF produces new page identities; old
+Sources and Memory citations retain their original revision. Physical page
+numbers must not be confused with printed page labels.
 
 After reopening Runtime, call:
 
@@ -46,74 +41,78 @@ for citation in citations:
     record = await memory.get(GetMemoryEntryRequest(citation=citation))
 ```
 
-Retrieval reads active entries through the public scoped `Memory.list()` API. It
-uses the exact snapshot's citations and combines three BM25 rankings: complete
-page evidence with statement headings, literal question terms and phrases, and
-overlapping 120-token passages. Reciprocal-rank fusion retains bounded confidence
-from the statement-aware score. Local passages help retrieve short notes within
-long pages without changing the captured text or its page citation.
-Financial vocabulary covers accounting paraphrases and supporting lines for
-ratios, cash conversion, buybacks, leases, taxes, and capital returns. Inflection
-normalization preserves words such as loss and business and handles taxes.
-Recognized company names in report IDs select the candidate reports before page
-ranking. Corporate suffixes and conjunctions are normalized; initialisms are
-derived from multiword report identities without a company lookup table.
-An explicit annual-report or 10-K/10-Q year selects matching available reports.
-A financial year alone also keeps newer reports that may contain comparative
-or restated evidence. If no report year matches, the named company's available
-reports remain eligible; this fallback is applied separately to each company.
-Without a recognized identity, the whole scope
-remains searchable. Business overview headings can supply geographical context
-even when the page uses regional names rather than repeating the question terms;
-those headings may occur after a long preamble.
-It returns at most `limit` distinct page Sources, ignoring unrelated memories and
-entries combining multiple Sources. Empty questions and nonpositive limits return
-an empty tuple. It uses no models, network, file reads, or persistent search cache.
+Retrieval reads active entries through the public scoped `Memory.list()` API.
+It returns that snapshot's real citations, with at most `limit` distinct page
+Sources. Entries combining multiple Sources and unrelated memories are ignored.
+Blank questions and nonpositive limits return an empty tuple.
 
-Each query reads and tokenizes the scoped corpus. Time and transient memory grow
-linearly with corpus text size; this is intended for small report collections
-such as the challenge's 1,151 pages. Larger deployments should use a bounded index
-behind the same citation contract. The public 503-page selftest verifies coverage,
-persistence, and citation integrity. Hidden evidence recall and token-quality
-thresholds require the evaluator's withheld annotations and are not established
-by that selftest.
+The offline ranker combines page BM25, literal phrases, overlapping 120-token
+passages, and financial statement headings. Unicode ligatures and soft hyphens
+are normalized only in the derived search view. A word split across a line is
+joined when its complete form is a query or expansion term; ordinary compound
+hyphens retain their word boundaries. Captured page text is never rewritten.
 
-Validation with the competition's fixed offline dependencies:
+Financial vocabulary expands metrics toward their supporting statement lines,
+including cash ratios, net debt, EBITDA margins, ROA, ROE, ROIC, and FCF. A
+bounded part of the result window retains the strongest pages for separate
+metric components so one discussion cannot crowd out a required denominator or
+another statement. The remaining slots use the fused ranking. Near-identical
+narrative pages from the same report are downweighted, without removing page
+identities. Financial statements, number-heavy tables, and other reports are
+protected from that narrative treatment.
+
+Company names are derived from caller-supplied report identities, with corporate
+suffix and conjunction normalization and derived multiword initialisms. No
+company lookup table is used. An explicit annual-report or 10-K/10-Q year selects
+matching available reports. A financial year alone also keeps newer reports
+which may contain comparative or restated evidence. Fallback to available
+reports is applied separately to each company. Without a recognized identity,
+the whole scope remains eligible.
+
+Search uses no models, network, source-file reads, or persistent corpus cache.
+Each query reads the scoped Memory snapshot, with work proportional to its text
+plus diversification over a bounded candidate pool. This is intended for small
+report collections, including the challenge's 1,151 pages, rather than an
+unbounded knowledge base.
+
+## Validation
+
+Run the organizer-owned public tests with Python 3.12 and their locked
+dependencies:
 
 ```sh
 make -C competition test-pdf
 ```
 
-Additional behavior tests live in `tests/test_pdf_pages.py` and
-`tests/e2e/test_pdf_page_retrieval.py`.
+Product behavior tests are in `tests/test_pdf_pages.py` and
+`tests/e2e/test_pdf_page_retrieval.py`. They cover atomic parsing, permissions,
+revisions, scope isolation, persistence, restart, exact citation readback,
+financial paraphrases and acronyms, supporting pages under discussion
+distractors, and typography normalization without changing stored evidence.
 
-## Local validation
+The `PDF page evidence acceptance` GitHub Actions workflow runs the public and
+product PDF tests in the official container. Its compose configuration supplies
+one CPU, two GiB of memory, no external network, and read-only product sources.
+Container image preparation downloads dependencies before offline execution.
 
-Python 3.12 with the competition's pypdf 6.19.0 was used on Windows. The official
-503-page public acceptance suite passed all six tests. Parser and real-Runtime
-regressions cover persistence, scope isolation, revisions, financial paraphrases,
-company identities, distinct pages, and exact citation readback.
+Independent extraction checks used ten complete original 2022 reports: PepsiCo,
+3M, Activision Blizzard, Adobe, AES, Apple, Coca-Cola, Johnson & Johnson,
+Microsoft, and Walmart. The 2,126 pages were compared with
+`pdftotext -layout -enc UTF-8` using lowercased `[a-z]+|\d+` token multisets.
+Every page's term count was within 90%–110% of that independent extraction;
+minimum whole-page token F1 was 0.981132. These checks use original PDFs and
+independent extraction, not the evaluator's frozen counts or annotated evidence.
 
-Five complete original reports were checked: PepsiCo 2022 (503 pages), 3M 2022
-(252), Activision Blizzard 2022 (312), Adobe 2022 (99), and AES 2022 (257).
-The additional four are the first four companies alphabetically with a 2022 10-K
-in the fixed FinanceBench PDF directory. Selection did not use questions or gold.
-
-Across all 1,423 pages, lowercased `[a-z]+|\d+` multiset token counts were within
-90%–110% of independent `pdftotext -layout -enc UTF-8` output; minimum page token
-F1 against that output was 0.981132. These are independent extraction checks,
-not comparisons with the evaluator's frozen counts or annotated evidence.
-
-All 1,423 observations were ingested into one real SQLite Runtime with the fixed
+All 2,126 observations were also submitted to one real SQLite Runtime using the
 public evidence pipeline. Duplicate submission remained idempotent. After
-closing and reopening Runtime, the five public questions and sixteen generic
-financial queries returned 420 exact citations. Every citation was read through
-`memory.get`, checked against its original Source, and verified to name a distinct
-page from the requested report. Local query times were 0.52–0.72 seconds;
-ingestion and flush took 46.2 seconds. This was a local Windows run, not the
-official CPU/memory-limited container, and is not a general latency guarantee.
+restart, 35 public or generic financial questions returned 700 exact citations.
+Each was read through `memory.get` and checked against the original document,
+complete SHA-256, physical page, and unchanged evidence text. These Windows
+checks used the fixed pypdf 6.19.0 environment without the container's resource
+limits; their maximum observed search time was 1.875 seconds. Citation integrity
+does not measure annotated evidence-page recall.
 
-No answers, gold evidence, or evidence-page lists were used in this validation.
-Evidence-page Recall@20 on the official public and withheld splits and quality
-against the evaluator's frozen reference remain unverified. Passing public
-acceptance or these independent checks does not establish the 50-point score.
+Passing public acceptance and these checks does not establish the platform's
+50-point result. Official evidence-page Recall@20 and annotated-evidence quality
+can only be confirmed by the evaluator. Neither runtime parsing nor retrieval
+reads answers, gold, evidence-page lists, pre-extracted files, or judging assets.

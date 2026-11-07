@@ -21,6 +21,7 @@ import io
 import json
 import math
 import re
+import unicodedata
 import zlib
 from collections import Counter
 from typing import TYPE_CHECKING, Literal
@@ -268,23 +269,42 @@ _REPORT_SUFFIXES = frozenset({
     "llc",
     "co",
 })
-_INFLECTIONS = {"taxes": "tax", "losses": "loss", "businesses": "business", "analyses": "analysis"}
+_INFLECTIONS = {
+    "taxes": "tax",
+    "losses": "loss",
+    "businesses": "business",
+    "analyses": "analysis",
+    "amortisation": "amortization",
+    "capitalisation": "capitalization",
+    "taxation": "tax",
+}
+_LINE_WRAP = re.compile(r"([a-z]+)[-\u00ad][ \t]*\r?\n[ \t]*([a-z]+)")
 
 
-def _tokens(text: str) -> list[str]:
-    words = _WORDS.findall(text.lower())
-    # Light inflection normalization keeps numbers and accounting abbreviations.
-    return [
-        _INFLECTIONS.get(
-            word,
-            word[:-3] + "y"
-            if word.endswith("ies")
-            else word[:-1]
-            if len(word) > 3 and word.endswith("s") and not word.endswith(("ss", "us", "is"))
-            else word,
+def _word_form(word: str) -> str:
+    if word in _INFLECTIONS:
+        return _INFLECTIONS[word]
+    if word.endswith("ies"):
+        return word[:-3] + "y"
+    if len(word) > 3 and word.endswith("s") and not word.endswith(("ss", "us", "is")):
+        return word[:-1]
+    return word
+
+
+def _search_text(text: str, joined_words: set[str] | None = None) -> str:
+    # Normalize only the derived search view. Captured text and quality tokens
+    # retain the PDF extractor's original characters and physical page boundary.
+    normalized = unicodedata.normalize("NFKC", text).lower()
+    if joined_words:
+        normalized = _LINE_WRAP.sub(
+            lambda match: match[1] + match[2] if _word_form(match[1] + match[2]) in joined_words else match[0],
+            normalized,
         )
-        for word in words
-    ]
+    return normalized.replace("\u00ad", "")
+
+
+def _tokens(text: str, joined_words: set[str] | None = None) -> list[str]:
+    return [_word_form(word) for word in _WORDS.findall(_search_text(text, joined_words))]
 
 
 _STOPWORDS = frozenset(
@@ -364,6 +384,33 @@ _METRICS = {
     "interest coverage": ("operating income", "interest expense"),
     "dividend payout": ("dividend", "net income"),
     "earnings per share": ("basic", "diluted", "net income", "weighted average share"),
+    "cash ratio": ("cash equivalent", "current liability"),
+    "net debt": ("total debt", "cash equivalent"),
+    "debt ratio": ("total liability", "total asset"),
+    "debt to capital": ("total debt", "shareholder equity", "stockholder equity"),
+    "equity multiplier": ("total asset", "shareholder equity", "stockholder equity"),
+    "ebit": ("operating income", "operating profit"),
+    "ebitda margin": ("operating income", "depreciation amortization", "revenue", "net sale"),
+    "net debt to ebitda": ("total debt", "cash equivalent", "operating income", "depreciation amortization"),
+    "free cash flow margin": ("operating cash flow", "capital expenditure", "revenue"),
+    "operating cash flow ratio": ("operating cash flow", "current liability"),
+    "cash flow margin": ("operating cash flow", "revenue"),
+    "debt service coverage": ("operating income", "interest expense", "principal payment", "current maturity"),
+}
+_METRIC_ALIASES = {
+    "gross profit margin": "gross margin",
+    "roa": "return on asset",
+    "roe": "return on equity",
+    "roic": "return on invested capital",
+    "roce": "return on capital employed",
+    "eps": "earnings per share",
+    "fcf": "free cash flow",
+    "fcf margin": "free cash flow margin",
+    "dso": "days sales outstanding",
+    "dio": "days inventory outstanding",
+    "dpo": "days payable outstanding",
+    "ccc": "cash conversion cycle",
+    "net leverage ratio": "net debt to ebitda",
 }
 _STATEMENT_PREFIX = r"^\s*(?:(?:consolidated|combined|condensed|unaudited)\s+)*"
 _STATEMENT_SUFFIX = r"(?:\s*\([^\n)]*\))*\s*$"
@@ -371,21 +418,23 @@ _STATEMENT_HEADINGS = (
     (
         frozenset({"income", "profit", "revenue", "sale", "earning", "ebitda", "margin"}),
         re.compile(
-            _STATEMENT_PREFIX
-            + r"(?:statements? of (?:income|operations?|earnings?)|income statements?)"
-            + _STATEMENT_SUFFIX,
+            _STATEMENT_PREFIX + r"(?:statements? of (?:(?:consolidated|combined|condensed)\s+)*"
+            r"(?:income|operations?|earnings?|profit(?:\s+or\s+loss)?)|income statements?)"
+            r"(?:\s+and\s+(?:other\s+)?comprehensive\s+(?:income|loss))?" + _STATEMENT_SUFFIX,
             re.IGNORECASE | re.MULTILINE,
         ),
     ),
     (
         frozenset({"cash", "flow", "capex", "depreciation", "amortization", "ebitda"}),
         re.compile(
-            _STATEMENT_PREFIX + r"statements? of cash flows?" + _STATEMENT_SUFFIX,
+            _STATEMENT_PREFIX
+            + r"statements? of (?:(?:consolidated|combined|condensed)\s+)*cash flows?"
+            + _STATEMENT_SUFFIX,
             re.IGNORECASE | re.MULTILINE,
         ),
     ),
     (
-        frozenset({"asset", "liability", "equity", "inventory", "receivable", "debt", "capital"}),
+        frozenset({"asset", "liability", "equity", "inventory", "receivable", "debt", "capital", "cash", "equivalent"}),
         re.compile(
             _STATEMENT_PREFIX + r"(?:balance sheets?|statements? of financial position)" + _STATEMENT_SUFFIX,
             re.IGNORECASE | re.MULTILINE,
@@ -406,6 +455,21 @@ _GEOGRAPHY_TERMS = frozenset({
     "international",
     "market",
 })
+_LEGAL_TERMS = frozenset({"legal", "lawsuit", "litigation", "proceeding", "contingency"})
+_LEGAL_HEADING = re.compile(
+    r"^\s*(?:(?:item|note)\s+\d+[a-z]?\s*[.\u2014:\-]?\s*)?"
+    r"(?:legal\s+(?:proceedings?|matters)|litigation|(?:commitments?\s+and\s+)?contingencies)" + _STATEMENT_SUFFIX,
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def _matched_metrics(tokens: list[str]) -> tuple[tuple[str, ...], ...]:
+    normalized = " " + " ".join(tokens) + " "
+    names = {metric for metric in _METRICS if " " + " ".join(_tokens(metric)) + " " in normalized}
+    names.update(
+        metric for alias, metric in _METRIC_ALIASES.items() if " " + " ".join(_tokens(alias)) + " " in normalized
+    )
+    return tuple(dict.fromkeys(_METRICS[name] for name in sorted(names)))
 
 
 def _query_terms(question: str) -> tuple[dict[str, float], tuple[tuple[str, ...], ...]]:
@@ -417,9 +481,7 @@ def _query_terms(question: str) -> tuple[dict[str, float], tuple[tuple[str, ...]
         for concept in _CONCEPTS
         if any(" " + " ".join(_tokens(phrase)) + " " in normalized for phrase in concept)
     ]
-    expansions.extend(
-        alternatives for metric, alternatives in _METRICS.items() if " " + " ".join(_tokens(metric)) + " " in normalized
-    )
+    expansions.extend(_matched_metrics(raw))
     # Literal accounting phrases remain a separate signal from broad synonyms.
     phrases = [
         tuple(raw[start : start + size])
@@ -470,7 +532,8 @@ async def search_pdf_pages(
                 seen.add(identity)
     if not records:
         return ()
-    return _rank_pages(_select_reports(records, question), terms, phrases, limit)
+    components = tuple(dict.fromkeys(phrase for metric in _matched_metrics(_tokens(question)) for phrase in metric))
+    return _rank_pages(_select_reports(records, question), terms, phrases, limit, components=components)
 
 
 def _select_reports(records: list[MemoryEntryRecord], question: str) -> list[MemoryEntryRecord]:
@@ -533,17 +596,22 @@ def _rank_pages(
     terms: dict[str, float],
     phrases: tuple[tuple[str, ...], ...],
     limit: int,
+    *,
+    components: tuple[str, ...] = (),
 ) -> tuple[MemoryCitation, ...]:
     """Fuse page, literal-query and local-passage rankings of the same snapshot."""
 
     bodies = [record.entry.text.partition("\n")[2] for record in records]
-    token_lists = [_tokens(body) for body in bodies]
+    component_queries = [_query_terms(component) for component in components]
+    indexed_terms = set(terms).union(*(query.keys() for query, _ in component_queries))
+    token_lists = [_tokens(body, indexed_terms) for body in bodies]
     counts = [Counter(tokens) for tokens in token_lists]
     frequency = Counter(token for count in counts for token in count)
     average_length = max(1.0, sum(map(len, token_lists)) / len(records))
-    idf = {term: math.log1p((len(records) - frequency[term] + 0.5) / (frequency[term] + 0.5)) for term in terms}
+    idf = {term: math.log1p((len(records) - frequency[term] + 0.5) / (frequency[term] + 0.5)) for term in indexed_terms}
     literal_terms = {term: weight for term, weight in terms.items() if weight == 1.0}
     rankings: list[list[tuple[float, int]]] = [[], [], []]
+    component_rankings: list[list[tuple[float, int]]] = [[] for _ in component_queries]
     for index, (record, tokens, count) in enumerate(zip(records, token_lists, counts, strict=True)):
         score = _bm25(count, len(tokens), terms, idf, average_length)
         literal_score = _bm25(count, len(tokens), literal_terms, idf, average_length)
@@ -562,13 +630,8 @@ def _rank_pages(
         # Actual statement titles are stronger evidence than a long discussion
         # repeating the same metrics. Restrict to complete heading lines near
         # the page start, so prose and numbered table-of-contents rows do not win.
-        score += sum(
-            3.0 * sum(terms[term] * idf[term] for term in vocabulary & terms.keys())
-            for vocabulary, heading in _STATEMENT_HEADINGS
-            if heading.search(bodies[index][:1000])
-        )
-        if _GEOGRAPHY_TERMS & terms.keys() and _BUSINESS_HEADING.search(bodies[index]):
-            score += 3.0 * sum(terms[term] * idf[term] for term in _GEOGRAPHY_TERMS & terms.keys())
+        body = _search_text(bodies[index], indexed_terms)
+        score += _heading_bonus(body, terms, idf)
         document_tokens = set(_tokens(record.entry.text.partition("\n")[0])) - {"10", "k", "q", "form", "report"}
         company = {term for term in document_tokens if not term.isdigit() and terms.get(term) == 1.0}
         if company:
@@ -590,7 +653,31 @@ def _rank_pages(
         )
         if passage_score > 0:
             rankings[2].append((passage_score, index))
-    return _fuse_page_rankings(records, rankings, limit)
+        for component_ranking, (query, component_phrases) in zip(component_rankings, component_queries, strict=True):
+            component_score = _bm25(count, len(tokens), query, idf, average_length)
+            if component_score <= 0:
+                continue
+            component_score += _heading_bonus(body, query, idf)
+            component_score += sum(
+                0.6 * sum(idf.get(term, 0.0) for term in phrase)
+                for phrase in component_phrases
+                if " " + " ".join(phrase) + " " in normalized
+            )
+            component_ranking.append((component_score, index))
+    return _fuse_page_rankings(records, rankings, limit, component_rankings=component_rankings, token_counts=counts)
+
+
+def _heading_bonus(body: str, terms: dict[str, float], idf: dict[str, float]) -> float:
+    score = sum(
+        3.0 * sum(terms[term] * idf[term] for term in vocabulary & terms.keys())
+        for vocabulary, heading in _STATEMENT_HEADINGS
+        if heading.search(body[:2000])
+    )
+    if _GEOGRAPHY_TERMS & terms.keys() and _BUSINESS_HEADING.search(body):
+        score += 3.0 * sum(terms[term] * idf[term] for term in _GEOGRAPHY_TERMS & terms.keys())
+    if _LEGAL_TERMS & terms.keys() and _LEGAL_HEADING.search(body[:2000]):
+        score += 3.0 * sum(terms[term] * idf[term] for term in _LEGAL_TERMS & terms.keys())
+    return score
 
 
 def _bm25(
@@ -605,7 +692,12 @@ def _bm25(
 
 
 def _fuse_page_rankings(
-    records: list[MemoryEntryRecord], rankings: list[list[tuple[float, int]]], limit: int
+    records: list[MemoryEntryRecord],
+    rankings: list[list[tuple[float, int]]],
+    limit: int,
+    *,
+    component_rankings: list[list[tuple[float, int]]] | None = None,
+    token_counts: list[Counter[str]] | None = None,
 ) -> tuple[MemoryCitation, ...]:
     fused: dict[int, float] = {}
     # Preserve the statement-aware channel while allowing literal evidence and
@@ -620,7 +712,102 @@ def _fuse_page_rankings(
     for score, index in rankings[0]:
         fused[index] += 0.1 * score / maximum
     ordered = sorted(fused, key=lambda index: (-fused[index], index))
-    return tuple(records[index].citation for index in ordered[:limit])
+    selected = _component_pages(component_rankings, limit)
+    # A metric may require several different statements. Reserve a bounded part
+    # of the result window for their strongest supporting pages, then retain
+    # the fused ranking for the remaining slots. Small limits keep pure ranking.
+    if limit >= 4 and token_counts is not None and len(ordered) > limit:
+        return tuple(
+            records[index].citation for index in _diverse_pages(records, ordered, fused, selected, token_counts, limit)
+        )
+    for index in ordered:
+        if len(selected) >= limit:
+            break
+        selected.add(index)
+    return tuple(
+        records[index].citation for index in sorted(selected, key=lambda index: (-fused.get(index, 0.0), index))
+    )
+
+
+def _component_pages(rankings: list[list[tuple[float, int]]] | None, limit: int) -> set[int]:
+    selected: set[int] = set()
+    if limit < 4 or not rankings:
+        return selected
+    for ranking in rankings:
+        ranking.sort(key=lambda item: (-item[0], item[1]))
+    for depth in range(2):
+        for ranking in rankings:
+            if depth < len(ranking) and len(selected) < limit // 2:
+                selected.add(ranking[depth][1])
+    return selected
+
+
+def _diverse_pages(
+    records: list[MemoryEntryRecord],
+    ordered: list[int],
+    scores: dict[int, float],
+    reserved: set[int],
+    token_counts: list[Counter[str]],
+    limit: int,
+) -> list[int]:
+    """Downweight near-identical pages, without dropping citations or revisions."""
+
+    selected = sorted(reserved, key=lambda index: (-scores.get(index, 0.0), index))
+    remaining = set(ordered[: max(100, limit * 5)]) - reserved
+    candidates = remaining | reserved
+    narratives = {
+        index
+        for index in candidates
+        if sum(token_counts[index].values()) >= 40
+        and sum(count for token, count in token_counts[index].items() if token.isdigit())
+        <= 0.25 * sum(token_counts[index].values())
+        and not any(
+            heading.search(_search_text(records[index].entry.text.partition("\n")[2])[:2000])
+            for _, heading in _STATEMENT_HEADINGS
+        )
+    }
+    vectors = {
+        index: {
+            token: count
+            for token, count in token_counts[index].items()
+            if token not in _STOPWORDS and not token.isdigit()
+        }
+        for index in candidates
+    }
+    norms = {index: math.sqrt(sum(count * count for count in vector.values())) for index, vector in vectors.items()}
+    documents = {index: records[index].entry.text.partition("\n")[0] for index in vectors}
+    redundancy = dict.fromkeys(remaining, 0.0)
+
+    def penalize(previous: int) -> None:
+        left = vectors[previous]
+        # Page numbers and filing dates do not distinguish repeated narrative
+        # exhibits. Protect statements and numeric tables from this treatment.
+        if previous not in narratives:
+            return
+        for index in remaining:
+            if (
+                index not in narratives
+                or documents[index] != documents[previous]
+                or not norms[index]
+                or not norms[previous]
+            ):
+                continue
+            right = vectors[index]
+            smaller, larger = (left, right) if len(left) <= len(right) else (right, left)
+            similarity = sum(count * larger.get(token, 0) for token, count in smaller.items()) / (
+                norms[index] * norms[previous]
+            )
+            if similarity >= 0.9:
+                redundancy[index] += similarity
+
+    for index in selected:
+        penalize(index)
+    while remaining and len(selected) < limit:
+        best = max(remaining, key=lambda index: (scores[index] / (1.0 + 0.6 * redundancy[index]), -index))
+        remaining.remove(best)
+        selected.append(best)
+        penalize(best)
+    return selected
 
 
 __all__ = [
