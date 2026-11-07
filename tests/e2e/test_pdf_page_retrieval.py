@@ -525,3 +525,54 @@ def test_report_selectors_do_not_crowd_out_evidence_in_distinct_sections(
             assert len({entry.sources[0].source_id for entry in restored}) == len(restored)
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("question", "discussion", "evidence"),
+    [
+        (
+            "What fraction of Orion revenue came from the US and the UK in 2025?",
+            "Revenue in the US and UK depends on economic conditions and our business strategy.",
+            "Geographic information\nU.S. revenue 50%; U.K. revenue 20%.",
+        ),
+        (
+            "When do Orion rental commitments fall due after 2025?",
+            "Rental commitments fall due under agreements. Our rental commitments depend on future business needs.",
+            "Lease liability maturities\n2026 100 2027 90 2028 80 2029 70 2030 60 Thereafter 50.\n"
+            + "Right-of-use assets 90 Finance leases 20 Operating leases 70 " * 12,
+        ),
+        (
+            "Who were Orion largest customers in 2025?",
+            "Our largest customers support our business and our largest customers influence our distribution strategy.",
+            "Customers exceeding 10% of net revenue: Distributor Alpha 22%; Distributor Beta 15%.\n"
+            + "Product development costs 50 Software development costs 60 " * 20,
+        ),
+        (
+            "How were Orion pension funds invested between shares and bonds in 2025?",
+            "Pension funds are invested between shares and bonds. We regularly review pension funds invested in shares.",
+            "Pension plan asset allocation\nEquity securities 30% Debt securities 70%.",
+        ),
+    ],
+    ids=["dotted-initialisms", "lease-maturities", "customer-concentration", "pension-allocation"],
+)
+def test_disclosure_evidence_survives_distinct_narrative_sections(
+    tmp_path: Path, question: str, discussion: str, evidence: str
+) -> None:
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'disclosures.db'}"))
+    pages = []
+    for number in range(30):
+        vocabulary = " ".join(f"section{chr(97 + number)}{chr(97 + word)}" for word in range(26))
+        pages.append(("ORION_2025_10K", discussion + " " + (vocabulary + " ") * 10))
+    pages.append(("ORION_2025_10K", evidence))
+
+    async def run() -> None:
+        scope_id = await _capture_pages(config, pages)
+        async with open_builtin_runtime(config) as runtime:
+            memory = runtime.memory.for_scope(scope_id)
+            citations = await search_pdf_pages(memory, question, limit=20)
+            assert 0 < len(citations) <= 20
+            restored = [(await memory.get(GetMemoryEntryRequest(citation=item))).entry for item in citations]
+            assert any(entry.text == f"ORION_2025_10K\n{evidence}".strip() for entry in restored)
+            assert len({entry.sources[0].source_id for entry in restored}) == len(restored)
+
+    asyncio.run(run())

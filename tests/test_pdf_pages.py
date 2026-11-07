@@ -18,6 +18,7 @@ import asyncio
 import base64
 import hashlib
 import io
+import re
 import zlib
 
 import pytest
@@ -231,3 +232,38 @@ def test_nested_form_text_is_complete_and_corruption_fails_atomically() -> None:
     damaged = raw.replace(encoded, encoded[:-4] + b"\x00\x00\x00\x00", 1)
     with pytest.raises(ValueError):
         parse_pdf_document(PDFDocumentInput(document_id="nested-form", content=damaged))
+
+
+def test_small_horizontal_kerning_preserves_complete_words_and_table_numbers() -> None:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    stream = DecodedStreamObject()
+    stream.set_data(b"BT /F1 12 Tf 50 700 Td [(regula) -13 (tory) -300 (assets)] TJ 0 -20 Td (2025 100 2024 90) Tj ET")
+    writer.pages[0][NameObject("/Contents")] = stream
+    output = io.BytesIO()
+    writer.write(output)
+    raw = output.getvalue()
+    pages = parse_pdf_document(PDFDocumentInput(document_id="kerning", content=raw))
+    assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == ["regulatory", "assets", "2025", "100", "2024", "90"]
+    assert len(pages) == 2 and pages[1].text == ""
+    assert pages[0].document_sha256 == hashlib.sha256(raw).hexdigest()
+
+
+def test_exact_glyph_overprinting_does_not_duplicate_words_or_remove_real_repetitions() -> None:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    operations = [b"BT /F1 12 Tf"]
+    widths = {"R": 722, "e": 556, "v": 500, "n": 556, "u": 556}
+    for _ in range(2):
+        position = 50.0
+        for character in "Revenue":
+            operations.append(f"1 0 0 1 {position:.3f} 700 Tm ({character}) Tj".encode())
+            position += widths[character] * 12 / 1000
+    operations.append(b"1 0 0 1 50 680 Tm (1) Tj (1) Tj ET")
+    stream = DecodedStreamObject()
+    stream.set_data(b" ".join(operations))
+    writer.pages[0][NameObject("/Contents")] = stream
+    output = io.BytesIO()
+    writer.write(output)
+    pages = parse_pdf_document(PDFDocumentInput(document_id="overprint", content=output.getvalue()))
+    assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == ["revenue", "11"]

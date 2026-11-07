@@ -24,7 +24,7 @@ import re
 import unicodedata
 import zlib
 from collections import Counter
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -144,7 +144,110 @@ def _extract_page_text(page: PageObject) -> str:
                     raise TypeError("PDF page contents must be streams")  # noqa: TRY003
                 _validate_compression(resolved)
     _validate_form_streams(page, set())
-    return page.extract_text()
+    return _extract_complete_text(page)
+
+
+def _coalesce_kerning(items: list[Any]) -> list[Any]:
+    output: list[Any] = []
+    index = 0
+    while index < len(items):
+        current = items[index]
+        if isinstance(current, (str, bytes)):
+            # TJ advances use thousandths of a text-space unit. Keep word-sized
+            # advances and every original string byte; join only micro-kerning.
+            while (
+                index + 2 < len(items)
+                and isinstance(items[index + 1], (int, float))
+                and abs(items[index + 1]) <= 40
+                and type(items[index + 2]) is type(current)
+            ):
+                current = type(current)(current + items[index + 2])
+                index += 2
+        output.append(current)
+        index += 1
+    return output
+
+
+class _TextRunNormalizer:
+    """Normalize horizontal runs and exact, explicitly positioned overprinting."""
+
+    def __init__(self) -> None:
+        self.rewritten = False
+        self.positioned = True
+        self.font: tuple[Any, ...] = ()
+        self.fonts: list[tuple[Any, ...]] = []
+        self.form_depth = 0
+        self.painted: set[tuple[Any, ...]] = set()
+
+    def before(self, operator: bytes, operands: list[Any], cm: list[float], tm: list[float]) -> None:
+        from pypdf.generic import ArrayObject
+
+        if operator == b"Do":
+            self.form_depth += 1
+        if self.form_depth == 0:
+            self._track_position(operator, operands)
+            self._remove_overprint(operator, operands, cm, tm)
+        if operator == b"TJ" and operands:
+            items = _coalesce_kerning(operands[0])
+            self.rewritten |= len(items) != len(operands[0])
+            operands[0] = ArrayObject(items)
+
+    def after(self, operator: bytes, _operands: list[Any], *_matrices: object) -> None:
+        if operator == b"Do":
+            self.form_depth -= 1
+
+    def _track_position(self, operator: bytes, operands: list[Any]) -> None:
+        if operator == b"q":
+            self.fonts.append(self.font)
+        elif operator == b"Q" and self.fonts:
+            self.font = self.fonts.pop()
+        elif operator == b"Tf":
+            self.font = tuple(operands)
+        elif operator in (b"BT", b"Tm", b"Td", b"TD", b"T*"):
+            self.positioned = True
+
+    def _remove_overprint(self, operator: bytes, operands: list[Any], cm: list[float], tm: list[float]) -> None:
+        from pypdf.generic import ArrayObject
+
+        if operator not in (b"Tj", b"TJ") or not operands:
+            return
+        glyphs = operands[0] if operator == b"Tj" else (operands[0][0] if len(operands[0]) == 1 else None)
+        # Repeated implicit text advances are real repetitions. Require an
+        # explicit placement and an exact single-glyph match at that location.
+        if self.positioned and isinstance(glyphs, (str, bytes)) and len(glyphs) == 1:
+            key = (glyphs, self.font, tuple(cm), tuple(tm))
+            if key in self.painted:
+                operands[0] = type(glyphs)() if operator == b"Tj" else ArrayObject()
+                self.rewritten = True
+            else:
+                self.painted.add(key)
+        self.positioned = False
+
+
+def _extract_complete_text(page: PageObject) -> str:
+    """Detect TJ word-boundary failures without a vocabulary or document table.
+
+    Use layout only for affected pages, and only when it preserves every
+    character after exact overprinting is removed. Ordinary pages retain the
+    original extraction and table tokens. No content crosses a page boundary.
+    """
+
+    normalizer = _TextRunNormalizer()
+    coalesced = page.extract_text(visitor_operand_before=normalizer.before, visitor_operand_after=normalizer.after)
+    if not normalizer.rewritten:
+        return coalesced
+    plain = page.extract_text()
+    if Counter(_WORDS.findall(plain.lower())) == Counter(_WORDS.findall(coalesced.lower())):
+        return plain
+    layout = page.extract_text(
+        extraction_mode="layout", layout_mode_space_vertically=False, layout_mode_strip_rotated=False
+    )
+    if Counter(character for character in layout if not character.isspace()) != Counter(
+        character for character in coalesced if not character.isspace()
+    ):
+        return coalesced
+    # Wide tables and small fonts must not inflate Memory with layout padding.
+    return re.sub(r"[ \t]+", " ", layout)
 
 
 def _validate_form_streams(container: object, seen: set[int]) -> None:
@@ -295,6 +398,9 @@ def _search_text(text: str, joined_words: set[str] | None = None) -> str:
     # Normalize only the derived search view. Captured text and quality tokens
     # retain the PDF extractor's original characters and physical page boundary.
     normalized = unicodedata.normalize("NFKC", text).lower()
+    # PDF prose commonly spells initialisms with periods while questions omit
+    # them (U.S./US, U.K./UK). Preserve the same search token in both directions.
+    normalized = re.sub(r"\b(?:[a-z]\.)+[a-z]\.?(?![a-z])", lambda match: match[0].replace(".", ""), normalized)
     if joined_words:
         normalized = _LINE_WRAP.sub(
             lambda match: match[1] + match[2] if _word_form(match[1] + match[2]) in joined_words else match[0],
@@ -354,6 +460,10 @@ _CONCEPTS = (
     ("effective tax rate", "income tax provision", "income tax expense", "income before tax", "pretax income"),
     ("maturity", "maturities", "current portion", "current installment", "current maturities"),
     ("shareholder", "stockholder"),
+    ("customer", "buyer", "client"),
+    ("online", "ecommerce", "e commerce", "digital commerce"),
+    ("geographic", "foreign revenue", "foreign customer", "overseas", "outside the united states", "non us"),
+    ("maturity", "maturities", "fall due", "scheduled payment", "future minimum payment", "payment schedule"),
 )
 # Metric names expand toward their supporting statement lines. The reverse
 # direction would turn an ordinary revenue question into many unrelated ratios.
@@ -463,6 +573,27 @@ _LEGAL_HEADING = re.compile(
 )
 
 
+_GEOGRAPHIC_HEADING = re.compile(
+    r"^\s*(?:(?:note\s+)?\d+[a-z]?\s*[.\u2014:\-]?\s*)?"
+    r"(?:(?:business\s+)?segments?\s+(?:information\s+)?and\s+)?"
+    r"geographic(?:al)?\s+(?:information|data|areas?)\s*[:.]?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+_CUSTOMER_FOCUS = frozenset({
+    "single",
+    "individual",
+    "major",
+    "significant",
+    "largest",
+    "concentration",
+    "concentrated",
+    "depend",
+})
+_CUSTOMER_PERCENT = re.compile(r"\bcustomers?\b[\s\S]{0,200}?\b\d+(?:\.\d+)?\s*%", re.IGNORECASE)
+
+
 def _matched_metrics(tokens: list[str]) -> tuple[tuple[str, ...], ...]:
     normalized = " " + " ".join(tokens) + " "
     names = {metric for metric in _METRICS if " " + " ".join(_tokens(metric)) + " " in normalized}
@@ -470,6 +601,35 @@ def _matched_metrics(tokens: list[str]) -> tuple[tuple[str, ...], ...]:
         metric for alias, metric in _METRIC_ALIASES.items() if " " + " ".join(_tokens(alias)) + " " in normalized
     )
     return tuple(dict.fromkeys(_METRICS[name] for name in sorted(names)))
+
+
+def _supporting_components(question: str) -> tuple[str, ...]:
+    """Recall separate statement components and narrowly requested disclosures."""
+
+    tokens = set(_tokens(question))
+    components = [phrase for metric in _matched_metrics(_tokens(question)) for phrase in metric]
+    geographic = tokens & {
+        "geography",
+        "geographic",
+        "geographical",
+        "region",
+        "country",
+        "foreign",
+        "oversea",
+        "outside",
+    }
+    if geographic and tokens & {"revenue", "sale", "asset", "operation", "operate", "geography", "country"}:
+        components.extend(("geographic revenue", "geographic asset" if "asset" in tokens else "geographic segment"))
+    if tokens & {"lease", "rental", "rent"} and (
+        tokens & {"maturity", "due", "scheduled", "future"} or "fall due" in question.lower()
+    ):
+        components.extend(("lease liability maturity", "future minimum lease payment"))
+    if tokens & {"customer", "buyer", "client"} and tokens & _CUSTOMER_FOCUS:
+        components.append("customer concentration")
+    if "pension" in tokens and tokens & {"invested", "investment", "allocation", "bond", "security"}:
+        components.append("pension asset allocation")
+    # Components describe evidence, never report identities or fiscal headers.
+    return tuple(dict.fromkeys(components))
 
 
 def _query_terms(question: str) -> tuple[dict[str, float], tuple[tuple[str, ...], ...]]:
@@ -505,8 +665,9 @@ async def search_pdf_pages(
 ) -> tuple[MemoryCitation, ...]:
     """Rank active captured pages from one scoped Memory snapshot, entirely offline.
 
-    The public ``list`` API supplies both full page bodies and exact citations.
-    BM25 uses that corpus rather than a natural-language FTS admission cutoff,
+    Public ``search`` supplies native FTS candidates; ``list`` supplies the
+    active page snapshot and its exact citations. Offline BM25 also uses that corpus
+    rather than relying solely on a natural-language FTS admission cutoff,
     so synonyms and questions spanning several financial statements remain
     eligible. No source files, external indexes or process-local caches are used.
     Work is linear in the scoped corpus text; intended for report collections
@@ -532,10 +693,30 @@ async def search_pdf_pages(
                 seen.add(identity)
     if not records:
         return ()
-    components = tuple(dict.fromkeys(phrase for metric in _matched_metrics(_tokens(question)) for phrase in metric))
+    from powercontext.builtin.runtime import SearchMemoryRequest
+
     records = _select_reports(records, question)
     terms, phrases = _page_query(records, question, terms, phrases)
-    return _rank_pages(records, terms, phrases, limit, components=components)
+    components = _supporting_components(question)
+    # Ask the public search API for native lexical candidates as well. The
+    # snapshot remains authoritative: concurrent writes cannot invent a citation
+    # or move this query to another Memory revision. Explicit FTS avoids vectors.
+    native = await memory.search(
+        SearchMemoryRequest(query=" ".join(terms), mode="fts", limit=min(200, max(40, limit * 5)))
+    )
+    versions = {
+        record.entry.entry_version_id: record.entry.sources[0].source_id
+        for record in snapshot.entries
+        if len(record.entry.sources) == 1 and record.entry.sources[0].source_type == "pdf-page"
+    }
+    native_sources = tuple(
+        dict.fromkeys(
+            versions[hit.entry_version_id]
+            for hit in native.hits
+            if hit.memory_ref == snapshot.memory_ref and hit.entry_version_id in versions
+        )
+    )
+    return _rank_pages(records, terms, phrases, limit, components=components, native_sources=native_sources)
 
 
 def _page_query(
@@ -633,11 +814,19 @@ def _rank_pages(
     limit: int,
     *,
     components: tuple[str, ...] = (),
+    native_sources: tuple[str, ...] = (),
 ) -> tuple[MemoryCitation, ...]:
     """Fuse page, literal-query and local-passage rankings of the same snapshot."""
 
     bodies = [record.entry.text.partition("\n")[2] for record in records]
-    component_queries = [_query_terms(component) for component in components]
+    component_queries = [
+        (
+            (dict.fromkeys(_tokens(component), 1.0), (tuple(_tokens(component)),))
+            if component.startswith("geographic ")
+            else _query_terms(component)
+        )
+        for component in components
+    ]
     indexed_terms = set(terms).union(*(query.keys() for query, _ in component_queries))
     token_lists = [_tokens(body, indexed_terms) for body in bodies]
     counts = [Counter(tokens) for tokens in token_lists]
@@ -666,7 +855,7 @@ def _rank_pages(
         # repeating the same metrics. Restrict to complete heading lines near
         # the page start, so prose and numbered table-of-contents rows do not win.
         body = _search_text(bodies[index], indexed_terms)
-        score += _heading_bonus(body, terms, idf)
+        score += _evidence_bonus(body, terms, idf)
         document_tokens = set(_tokens(record.entry.text.partition("\n")[0])) - {"10", "k", "q", "form", "report"}
         company = {term for term in document_tokens if not term.isdigit() and terms.get(term) == 1.0}
         if company:
@@ -692,26 +881,35 @@ def _rank_pages(
             component_score = _bm25(count, len(tokens), query, idf, average_length)
             if component_score <= 0:
                 continue
-            component_score += _heading_bonus(body, query, idf)
+            component_score += _evidence_bonus(body, query, idf)
             component_score += sum(
                 0.6 * sum(idf.get(term, 0.0) for term in phrase)
                 for phrase in component_phrases
                 if " " + " ".join(phrase) + " " in normalized
             )
             component_ranking.append((component_score, index))
+    if native_sources and limit >= 10:
+        positions = {record.entry.sources[0].source_id: index for index, record in enumerate(records)}
+        rankings.append([
+            (1.0 / rank, positions[source]) for rank, source in enumerate(native_sources, 1) if source in positions
+        ])
     return _fuse_page_rankings(records, rankings, limit, component_rankings=component_rankings, token_counts=counts)
 
 
-def _heading_bonus(body: str, terms: dict[str, float], idf: dict[str, float]) -> float:
+def _evidence_bonus(body: str, terms: dict[str, float], idf: dict[str, float]) -> float:
     score = sum(
         3.0 * sum(terms[term] * idf[term] for term in vocabulary & terms.keys())
         for vocabulary, heading in _STATEMENT_HEADINGS
         if heading.search(body[:2000])
     )
-    if _GEOGRAPHY_TERMS & terms.keys() and _BUSINESS_HEADING.search(body):
+    if _GEOGRAPHY_TERMS & terms.keys() and (_BUSINESS_HEADING.search(body) or _GEOGRAPHIC_HEADING.search(body)):
         score += 3.0 * sum(terms[term] * idf[term] for term in _GEOGRAPHY_TERMS & terms.keys())
     if _LEGAL_TERMS & terms.keys() and _LEGAL_HEADING.search(body[:2000]):
         score += 3.0 * sum(terms[term] * idf[term] for term in _LEGAL_TERMS & terms.keys())
+    # Concentration questions need the disclosure's numeric relationship, not
+    # pages merely discussing customer acquisition or distribution channels.
+    if "customer" in terms and _CUSTOMER_FOCUS & terms.keys() and _CUSTOMER_PERCENT.search(body):
+        score += 6.0 * sum(terms[term] * idf[term] for term in ({"customer"} | _CUSTOMER_FOCUS) & terms.keys())
     return score
 
 
@@ -737,7 +935,7 @@ def _fuse_page_rankings(
     fused: dict[int, float] = {}
     # Preserve the statement-aware channel while allowing literal evidence and
     # locally relevant notes to compete without incompatible raw score scales.
-    for weight, ranking in zip((1.0, 0.65, 0.8), rankings, strict=True):
+    for weight, ranking in zip((1.0, 0.65, 0.8, 0.45)[: len(rankings)], rankings, strict=True):
         ranking.sort(key=lambda item: (-item[0], item[1]))
         for rank, (_, index) in enumerate(ranking, 1):
             fused[index] = fused.get(index, 0.0) + weight / (20 + rank)

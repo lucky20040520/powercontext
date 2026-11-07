@@ -8,6 +8,7 @@ on:
       - tests/e2e/test_pdf_page_retrieval.py
       - competition/**
       - .github/workflows/pdf-page-evidence.yml
+      - benchmark/pdf_retrieval/**
   workflow_dispatch:
 
 permissions:
@@ -42,3 +43,20 @@ jobs:
             /selftest/challenges/source-03-pdf-retrieval/acceptance \
             /pdf-tests/test_pdf_pages.py \
             /pdf-tests/test_pdf_page_retrieval.py
+
+      - name: Prepare original PDFs for the independent relevance audit
+        run: >-
+          python benchmark/pdf_retrieval/run.py
+          --cases benchmark/pdf_retrieval/cases.json
+          --pdf-dir .artifacts/pdf-relevance-inputs --download-only
+
+      - name: Audit independent relevance and full-page coverage offline
+        env:
+          POWERCONTEXT_CANDIDATE: ${{ github.workspace }}
+        run: |
+          docker compose -f competition/compose.yaml run --rm \
+            -v "$PWD/benchmark/pdf_retrieval/run.py:/pdf-relevance.py:ro" \
+            -v "$PWD/benchmark/pdf_retrieval/cases.json:/pdf-relevance-cases.json:ro" \
+            -v "$PWD/.artifacts/pdf-relevance-inputs:/pdf-input:ro" \
+            selftest python /pdf-relevance.py \
+            --cases /pdf-relevance-cases.json --pdf-dir /pdf-input --minimum-recall 0.95

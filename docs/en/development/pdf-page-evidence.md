@@ -41,13 +41,15 @@ for citation in citations:
     record = await memory.get(GetMemoryEntryRequest(citation=citation))
 ```
 
-Retrieval reads active entries through the public scoped `Memory.list()` API.
+Retrieval combines native lexical candidates from public scoped `Memory.search()`
+in explicit FTS mode with active pages from `Memory.list()`. Only exact citations
+from that snapshot are returned, even if the head changes during the query.
 It returns that snapshot's real citations, with at most `limit` distinct page
 Sources. Entries combining multiple Sources and unrelated memories are ignored.
 Blank questions and nonpositive limits return an empty tuple.
 
 The offline ranker combines page BM25, literal phrases, overlapping 120-token
-passages, and financial statement headings. Unicode ligatures and soft hyphens
+passages, and financial statement headings. Unicode ligatures, dotted initialisms (such as U.S./US), and soft hyphens
 are normalized only in the derived search view. A word split across a line is
 joined when its complete form is a query or expansion term; ordinary compound
 hyphens retain their word boundaries. Captured page text is never rewritten.
@@ -116,3 +118,28 @@ Passing public acceptance and these checks does not establish the platform's
 50-point result. Official evidence-page Recall@20 and annotated-evidence quality
 can only be confirmed by the evaluator. Neither runtime parsing nor retrieval
 reads answers, gold, evidence-page lists, pre-extracted files, or judging assets.
+
+
+## Kerning and independent relevance validation
+
+The parser detects a plain-extraction failure around small horizontal advances
+inside PDF TJ arrays. It compares the original and coalesced word boundaries and
+uses layout extraction only for affected pages when every non-whitespace character
+is preserved. Rotated text is included, and layout padding is compacted. Ordinary
+pages retain plain extraction. All byte digests, physical page boundaries and Source
+identities remain independent of extraction mode.
+
+An independently authored 40-question benchmark is available in
+`benchmark/pdf_retrieval`. Before the relevance fixes, its first company group
+recalled 14/16 pages and its additional-company group 18/21. After the fixes, local
+queries over the reopened 2,126-page Runtime recalled 16/16, 21/21, and 9/9 pages
+for the independently annotated public questions. These company groups were
+reviewed during development and do not constitute a blind hidden-set evaluation.
+The fixes combine a bounded native FTS channel with explicit disclosure components,
+geographic headings, customer-percentage relationships and initialism normalization.
+Small result limits preserve the primary statement ranking.
+
+The workflow additionally captures eleven complete original reports (2,352 pages),
+checks independent term counts and selected whole-page token F1, then runs the
+40-case benchmark in the official offline container. The fixtures and evaluation
+script are outside `src/` and never participate in assessed parsing or retrieval.

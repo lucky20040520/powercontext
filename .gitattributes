@@ -7,3 +7,6 @@ integrations/dsh/plugins/powercontext/lib/*.d.ts text eol=lf
 
 # Public Pi fixtures are verified byte-for-byte by their published SHA-256.
 competition/challenges/source-02-pi-history/workload/public/*.jsonl text eol=lf
+
+# Independent PDF benchmark fixtures use portable UTF-8 LF text.
+benchmark/pdf_retrieval/cases.json text eol=lf
