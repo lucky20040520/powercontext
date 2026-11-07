@@ -332,3 +332,41 @@ def test_layout_repairs_split_words_with_page_or_nested_form_fonts(form_depth: i
     assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == ["regulatory", "financial", "assets", "123"]
     assert len(pages) == 2 and pages[1].text == ""
     assert pages[0].document_sha256 == hashlib.sha256(raw).hexdigest()
+
+
+@pytest.mark.parametrize("copies", [1, 2])
+def test_mixed_page_and_form_fonts_preserve_all_painted_text(copies: int) -> None:
+    writer = PdfWriter()
+    writer.clone_document_from_reader(PdfReader(io.BytesIO(_document())))
+    page = writer.pages[0]
+    form = DecodedStreamObject()
+    form.set_data(b"BT /F1 12 Tf 50 700 Td [(Reg) 3 (ulatory)] TJ 0 -20 Td [(fin) 278] TJ [(ancial assets 123)] TJ ET")
+    form[NameObject("/Subtype")] = NameObject("/Form")
+    form[NameObject("/Resources")] = page["/Resources"]
+    form[NameObject("/BBox")] = ArrayObject([NumberObject(n) for n in (0, 0, 612, 792)])
+    page[NameObject("/Resources")] = DictionaryObject({
+        NameObject("/XObject"): DictionaryObject({NameObject("/Canvas"): writer._add_object(form)}),
+        NameObject("/Font"): DictionaryObject({
+            NameObject("/F1"): DictionaryObject({
+                NameObject("/Type"): NameObject("/Font"),
+                NameObject("/Subtype"): NameObject("/Type1"),
+                NameObject("/BaseFont"): NameObject("/Courier"),
+            })
+        }),
+    })
+    operations = [b"BT /F1 12 Tf 50 750 Td (Annual report) Tj ET"]
+    for index in range(copies):
+        operations.append(f"q 1 0 0 1 0 {-100 * index} cm /Canvas Do Q".encode())
+    operations.append(b"BT /F1 12 Tf 50 100 Td (End of page) Tj ET")
+    contents = DecodedStreamObject()
+    contents.set_data(b" ".join(operations))
+    page[NameObject("/Contents")] = contents
+    output = io.BytesIO()
+    writer.write(output)
+    raw = output.getvalue()
+    pages = parse_pdf_document(PDFDocumentInput(document_id="mixed-fonts", content=raw))
+    assert re.findall(r"[a-z]+|\d+", pages[0].text.lower()) == (
+        ["annual", "report"] + ["regulatory", "financial", "assets", "123"] * copies + ["end", "of", "page"]
+    )
+    assert len(pages) == 2 and pages[1].text == ""
+    assert pages[0].document_sha256 == hashlib.sha256(raw).hexdigest()

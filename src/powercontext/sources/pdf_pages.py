@@ -347,9 +347,75 @@ def _extract_complete_text(page: PageObject, *, prefer_layout: bool = False) -> 
     if Counter(character for character in layout if not character.isspace()) != Counter(
         character for character in coalesced if not character.isspace()
     ):
-        return coalesced
+        return _repair_mixed_form_text(page, coalesced)
     # Wide tables and small fonts must not inflate Memory with layout padding.
     return re.sub(r"[ \t]+", " ", layout)
+
+
+def _painted_forms(page: PageObject) -> tuple[StreamObject, ...]:
+    """Return only actual direct Form invocations, retaining their multiplicity."""
+    from pypdf.generic import StreamObject
+
+    contents = page.get_contents()
+    resources = page.get("/Resources")
+    if contents is None or resources is None:
+        return ()
+    objects = resources.get_object().get("/XObject")
+    if objects is None:
+        return ()
+    forms: list[StreamObject] = []
+    for args, operator in contents.operations:
+        if operator == b"Do" and len(args) == 1:
+            form = objects.get_object()[args[0]].get_object()
+            if isinstance(form, StreamObject) and form.get("/Subtype") == "/Form":
+                forms.append(form)
+    return tuple(forms)
+
+
+def _repair_mixed_form_text(page: PageObject, text: str) -> str:
+    """Repair Form-local word spacing when whole-page layout lacks its fonts.
+
+    Preserve all surrounding page text and every painted occurrence. A repair is
+    applied only to an exact extracted Form span and only if its non-whitespace
+    characters are unchanged; unrelated text and page boundaries cannot move.
+    """
+    from pypdf import PageObject
+    from pypdf.generic import ArrayObject, DictionaryObject, NameObject
+
+    forms = _painted_forms(page)
+    if not forms:
+        return text
+    resources = page["/Resources"]
+    occurrences = Counter(map(id, forms))
+    seen: set[int] = set()
+
+    def coalesce(operator: bytes, operands: list[Any], *_matrices: object) -> None:
+        if operator == b"TJ" and operands:
+            operands[0] = ArrayObject(_coalesce_kerning(operands[0]))
+
+    for form in forms:
+        if id(form) in seen:
+            continue
+        seen.add(id(form))
+        local_resources = form.get("/Resources", resources).get_object()
+        if not isinstance(local_resources, DictionaryObject):
+            continue
+        canvas = PageObject(pdf=page.pdf)
+        canvas.update(page)
+        canvas.pop("/Parent", None)
+        canvas[NameObject("/Contents")] = form
+        canvas[NameObject("/Resources")] = local_resources
+        original = canvas.extract_text(visitor_operand_before=coalesce)
+        # An identical span elsewhere may use different fonts or spacing.
+        # Leave ambiguous matches alone rather than modifying unrelated text.
+        if not original or text.count(original) != occurrences[id(form)]:
+            continue
+        repaired = _extract_complete_text(_text_bearing_page(canvas), prefer_layout=True)
+        if Counter(char for char in original if not char.isspace()) == Counter(
+            char for char in repaired if not char.isspace()
+        ):
+            text = text.replace(original, repaired)
+    return text
 
 
 def _validate_form_streams(container: object, seen: set[int]) -> None:

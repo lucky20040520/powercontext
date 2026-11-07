@@ -162,3 +162,8 @@ Regression tests cover page fonts and two nested Form canvases.
 Densely glyph-wise TJ encoding also admits layout repair, even if joining its
 internal kerning leaves plain extraction unchanged. Sparse word-level kerning
 retains plain text unless another concrete layout defect is detected.
+
+For mixed pages, if whole-page layout cannot preserve all characters, used Forms
+are repaired with their local fonts. Only exact unambiguous extracted spans are
+replaced, with non-whitespace characters preserved. Surrounding page text and
+repeated painted occurrences remain intact, including colliding font names.
