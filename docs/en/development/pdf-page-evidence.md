@@ -158,3 +158,7 @@ Trailing backwards kerning also admits character-preserving layout extraction to
 repair words spanning text runs. Latin presentation ligatures expand to their
 letters, and page text uses NFC so persistence does not change its projection.
 Regression tests cover page fonts and two nested Form canvases.
+
+Densely glyph-wise TJ encoding also admits layout repair, even if joining its
+internal kerning leaves plain extraction unchanged. Sparse word-level kerning
+retains plain text unless another concrete layout defect is detected.

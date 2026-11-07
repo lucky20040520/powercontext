@@ -253,6 +253,8 @@ class _TextRunNormalizer:
         self.aliases = _font_aliases(page)
         self.rewritten = False
         self.cross_run_kerning = False
+        self.joined_glyphs = 0
+        self.text_characters = 0
         self.positioned = True
         self.font: tuple[Any, ...] = ()
         self.fonts: list[tuple[Any, ...]] = []
@@ -267,8 +269,11 @@ class _TextRunNormalizer:
         if self.form_depth == 0:
             self._track_position(operator, operands)
             self._remove_overprint(operator, operands, cm, tm)
+        if operator == b"Tj" and operands:
+            self.text_characters += len(operands[0])
         if operator == b"TJ" and operands:
             original = operands[0]
+            self.text_characters += sum(len(item) for item in original if isinstance(item, (str, bytes)))
             if (
                 len(original) >= 2
                 and isinstance(original[-1], (int, float))
@@ -279,6 +284,7 @@ class _TextRunNormalizer:
             ):
                 self.cross_run_kerning = True
             items = _coalesce_kerning(original)
+            self.joined_glyphs += (len(original) - len(items)) // 2
             self.rewritten |= len(items) != len(operands[0])
             operands[0] = ArrayObject(items)
 
@@ -325,6 +331,10 @@ def _extract_complete_text(page: PageObject, *, prefer_layout: bool = False) -> 
 
     normalizer = _TextRunNormalizer(page)
     coalesced = page.extract_text(visitor_operand_before=normalizer.before, visitor_operand_after=normalizer.after)
+    # Glyph-wise TJ encoding can fragment words across independently placed
+    # runs even when coalescing leaves plain extraction unchanged. Its density
+    # distinguishes that producer pattern from ordinary word-level kerning.
+    prefer_layout |= normalizer.joined_glyphs * 2 >= max(1, normalizer.text_characters)
     if not normalizer.rewritten and not normalizer.cross_run_kerning and not prefer_layout:
         return coalesced
     if not prefer_layout and not normalizer.cross_run_kerning:
