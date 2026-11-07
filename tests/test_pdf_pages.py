@@ -183,7 +183,9 @@ def test_chained_filters_preserve_complete_text_and_reject_corruption() -> None:
     writer.write(output)
     pages = parse_pdf_document(PDFDocumentInput(document_id="filter-chain", content=output.getvalue()))
     assert "12345" in pages[0].text and "6789" in pages[0].text
-    corrupt = base64.a85encode(zlib.compress(original)[:-4] + b"\x00\x00\x00\x00") + b"~>"
+    # An all-zero final four-byte group is encoded as the ASCII85 ``z``
+    # shorthand, so use a non-zero replacement to preserve the PDF byte length.
+    corrupt = base64.a85encode(zlib.compress(original)[:-4] + b"\x00\x00\x00\x01") + b"~>"
     assert len(corrupt) == len(encoded)
     with pytest.raises(ValueError):
         parse_pdf_document(
@@ -194,6 +196,17 @@ def test_chained_filters_preserve_complete_text_and_reject_corruption() -> None:
 def test_indirect_compression_filter_is_a_readable_pdf() -> None:
     pages = parse_pdf_document(PDFDocumentInput(document_id="indirect-filter", content=_document(indirect_filter=True)))
     assert len(pages) == 2 and "Revenue 2025 1,234.56" in pages[0].text
+
+
+def test_indirect_compression_filter_still_rejects_a_corrupt_stream() -> None:
+    original = b"BT /F1 12 Tf 50 700 Td (Revenue 2025 1,234.56) Tj 0 -20 Td (Net income 789) Tj ET"
+    compressed = zlib.compress(original)
+    raw = _document(indirect_filter=True)
+    assert compressed in raw
+    damaged = raw.replace(compressed, compressed[:-4] + b"\x00\x00\x00\x01", 1)
+    assert damaged != raw
+    with pytest.raises(ValueError):
+        parse_pdf_document(PDFDocumentInput(document_id="indirect-filter", content=damaged))
 
 
 def test_nested_form_text_is_complete_and_corruption_fails_atomically() -> None:

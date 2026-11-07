@@ -317,9 +317,14 @@ def _validate_compression(stream: StreamObject) -> None:
     from pypdf.filters import decode_stream_data
     from pypdf.generic import ArrayObject, DecodedStreamObject, NameObject
 
-    filters = stream.get("/Filter", ())
-    if isinstance(filters, NameObject):
-        filters = (filters,)
+    filter_value = stream.get("/Filter", ())
+    filter_value = filter_value.get_object() if hasattr(filter_value, "get_object") else filter_value
+    if isinstance(filter_value, NameObject):
+        filters = (filter_value,)
+    elif isinstance(filter_value, ArrayObject):
+        filters = tuple(name.get_object() if hasattr(name, "get_object") else name for name in filter_value)
+    else:
+        filters = tuple(filter_value)
     if not any(name in ("/FlateDecode", "/Fl") for name in filters):
         return
     # Use the public serialization API to access the encoded payload. Reading
@@ -328,6 +333,7 @@ def _validate_compression(stream: StreamObject) -> None:
     stream.write_to_stream(buffer)
     encoded = buffer.getvalue().split(b"\nstream\n", 1)[1].rsplit(b"\nendstream", 1)[0]
     parameters = stream.get("/DecodeParms")
+    parameters = parameters.get_object() if hasattr(parameters, "get_object") else parameters
     for index, name in enumerate(filters):
         if name in ("/FlateDecode", "/Fl"):
             prefix = DecodedStreamObject()
